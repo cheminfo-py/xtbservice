@@ -1,0 +1,16 @@
+name: Docker Image Build CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build the Docker image
+        run: pip3 install requests[security] && ./build_docker.sh
+      - name: start the docker image
+        run: ./run_docker.sh && sleep 4s
+      - name: run the test
+        run: cd test && python3 docker_test.py

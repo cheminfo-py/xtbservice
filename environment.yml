@@ -1,0 +1,8 @@
+name: xtbservice
+channels:
+  - conda-forge
+  - rdkit
+dependencies:
+  - python=3.8
+  - rdkit
+  - xtb-python

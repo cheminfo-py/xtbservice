@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+  xtbservice:
+    build: .
+    #image: ghcr.io/cheminfo-py/xtb-service:latest
+    restart: always
+    environment:
+      - PORT=${PORT}
+    ports:
+      - ${PORT}:${PORT}
