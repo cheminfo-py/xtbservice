@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-import numpy as np 
+import numpy as np
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from ase import Atoms
+
 
 @dataclass
 class OptimizationResult:
@@ -10,12 +12,13 @@ class OptimizationResult:
     energy: float
 
 
-@dataclass
-class IRResult:
-    wavenumber: np.array
-    intensity: np.array
+class IRResult(BaseModel):
+    wavenumber: List[float]
+    intensities: List[float]
     zero_point_energy: float
+
 
 class IRRequest(BaseModel):
     smiles: str
-    method: Optional[str] = 'GFNFF'
+    method: Optional[str] = "GFNFF"
+

@@ -3,7 +3,7 @@ from xtb.ase.calculator import XTB
 from ase.optimize.lbfgs import LBFGS
 from copy import deepcopy
 from ase import Atoms
-
+from functools import lru_cache
 from .models import OptimizationResult
 
 
