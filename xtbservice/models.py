@@ -17,7 +17,7 @@ class IRResult(BaseModel):
     wavenumbers: List[float]
     intensities: List[float]
     zeroPointEnergy: float
-    displacements: Optional[Dict[int, str]]
+    modes: Optional[List[dict]]
     mostRelevantModesOfAtoms: Optional[Dict[int, List[int]]]
 
 
