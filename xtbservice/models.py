@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from pydantic import BaseModel, validator
-from typing import Optional, List
+from typing import Optional, List, Dict
 from ase import Atoms
 
 ALLOWED_METHODS = ('GFNFF', 'GFN2xTB', 'GFN1xTB')
@@ -17,7 +17,8 @@ class IRResult(BaseModel):
     wavenumbers: List[float]
     intensities: List[float]
     zero_point_energy: float
-    displacements: Optional[dict]
+    displacements: Optional[Dict[int, str]]
+    most_relevant_modes_of_atoms: Optional[Dict[int, int]]
 
 
 class IRRequest(BaseModel):
