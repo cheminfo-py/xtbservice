@@ -1,6 +1,7 @@
 from rdkit import Chem
 from rdkit.Chem import rdDistGeom
 from ase import Atoms
+from .cache import conformer_cache
 
 def embed_conformer(mol, num_conformer: int = 10, prune_tresh: float = 0.1):
     """Use Riniker/Landrum conformer generator: https://pubs.acs.org/doi/10.1021/acs.jcim.5b00654"""
@@ -22,10 +23,18 @@ def rdkit2ase(mol):
 
 
 def smiles2ase(smiles: str) -> Atoms:
-    mol = Chem.MolFromSmiles(smiles)
-    refmol = Chem.AddHs(Chem.Mol(mol))
-    embed_conformer(refmol)
-    return rdkit2ase(refmol)
+    try:
+        result = conformer_cache.get(smiles)
+    except KeyError:
+        pass
+
+    if result is None:
+        mol = Chem.MolFromSmiles(smiles)
+        refmol = Chem.AddHs(Chem.Mol(mol))
+        embed_conformer(refmol)
+        result =  rdkit2ase(refmol)
+        conformer_cache.set(smiles, result)
+    return result
 
 
 
