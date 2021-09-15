@@ -14,7 +14,7 @@ class OptimizationResult:
 
 
 class IRResult(BaseModel):
-    wavenumber: List[float]
+    wavenumbers: List[float]
     intensities: List[float]
     zero_point_energy: float
 
