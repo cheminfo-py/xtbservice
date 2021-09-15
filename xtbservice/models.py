@@ -19,7 +19,7 @@ class IRResult(BaseModel):
     zeroPointEnergy: float
     modes: Optional[List[dict]]
     mostRelevantModesOfAtoms: Optional[Dict[int, List[int]]]
-
+    hasImaginaryFrequency: bool
 
 class IRRequest(BaseModel):
     smiles: str

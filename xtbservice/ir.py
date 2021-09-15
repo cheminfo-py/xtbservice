@@ -29,12 +29,13 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
         spectrum = ir.get_spectrum()
         zpe = ir.get_zero_point_energy()
         ir.clean()
-
+        mode_info, has_imaginary = compile_modes_info(ir)
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
             zeroPointEnergy=zpe,
-            modes=compile_modes_info(ir),
+            modes=mode_info,
+            hasImaginaryFrequency=has_imaginary,
             mostRelevantModesOfAtoms=get_max_displacements(ir),
         )
         ir_cache.set(this_hash, result)
@@ -64,9 +65,10 @@ def compile_modes_info(ir):
     frequencies = ir.get_frequencies()
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
-
+    has_imaginary = False
     for n in range(3 * len(ir.indices)):
         f, c = clean_frequency(frequencies, n)
+        has_imaginary = True if c == "i" else False
         modes.append(
             {
                 "number": n,
@@ -82,7 +84,7 @@ def compile_modes_info(ir):
             }
         )
 
-    return modes
+    return modes, has_imaginary
 
 
 def get_max_displacements(ir):
