@@ -36,7 +36,7 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             displacements=get_displacement_xyz_dict(ir),
             most_relevant_modes_of_atoms=get_max_displacements(ir),
         )
-        # ir_cache.set(this_hash, result)
+        ir_cache.set(this_hash, result)
     return result
 
 

@@ -13,8 +13,14 @@ ALLOWED_HOSTS = ["*"]
 
 app = FastAPI(
     title="XTB webservice",
-    description="Offers xtb calculation tools",
+    description="Offers xtb calculation tools. Allowed methods are `GFNFF`, `GFN2xTB`, `GFN1xTB`",
     version=__version__,
+    contact={
+        "name": "Cheminfo",
+        "email": "admin@cheminfo.org",
+    },
+    license_info={
+        "name": "MIT"}
 )
 
 app.add_middleware(
