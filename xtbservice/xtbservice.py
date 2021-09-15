@@ -16,6 +16,13 @@ def read_version():
 
 
 @app.post("/ir", response_model=IRResult)
-def get_ir_spectrum(irrequest: IRRequest):
+def post_get_ir_spectrum(irrequest: IRRequest):
     ir = ir_from_smiles(irrequest.smiles, irrequest.method)
+    return ir
+
+
+
+@app.get("/ir", response_model=IRResult)
+def get_ir_spectrum(smiles: str, method: str = 'GFNFF'):
+    ir = ir_from_smiles(smiles, method)
     return ir
