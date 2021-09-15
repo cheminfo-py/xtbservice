@@ -29,7 +29,8 @@ def run_xtb_ir(atoms: Atoms, method: str="GFNFF") -> IRResult:
         result =  IRResult(
             wavenumbers = list(spectrum[0]),
             intensities = list(spectrum[1]),
-            zero_point_energy=zpe
+            zero_point_energy=zpe,
+            displacements=get_displacement_xyz_dict(ir)
         )
         #ir_cache.set(this_hash, result)
     return result
@@ -41,3 +42,43 @@ def ir_from_smiles(smiles, method):
     ir = run_xtb_ir(opt_result.atoms, method=method)
     return ir
 
+
+def get_displacement_xyz_dict(ir):
+    symbols = ir.atoms.get_chemical_symbols()
+    freq = ir.get_frequencies()
+    modes = {}
+
+    for n in range(3 * len(ir.indices)):
+        xyz_file = []
+        xyz_file.append('%6d\n' % len(ir.atoms))
+
+        if freq[n].imag != 0:
+            c = 'i'
+            freq[n] = freq[n].imag
+
+        else:
+            freq[n] = freq[n].real
+            c = ' '
+
+        xyz_file.append('Mode #%d, f = %.1f%s cm^-1'
+                    % (n, float(freq[n].real), c))
+
+        if ir.ir:
+            xyz_file.append(', I = %.4f (D/Å)^2 amu^-1.\n' % ir.intensities[n])
+        else:
+            xyz_file.append('.\n')
+
+        # dict_label = xyz_file[-1] + xyz_file[-2] 
+        # dict_label = dict_label.strip('\n')
+
+        mode = ir.get_mode(n)
+        for i, pos in enumerate(ir.atoms.positions):
+            xyz_file.append('%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n' %
+                        (symbols[i], pos[0], pos[1], pos[2],
+                        mode[i, 0], mode[i, 1], mode[i, 2]))
+
+        xyz_file_string = ''.join(xyz_file)
+
+        modes[n] = xyz_file_string
+
+    return modes

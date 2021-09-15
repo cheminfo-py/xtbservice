@@ -17,6 +17,7 @@ class IRResult(BaseModel):
     wavenumbers: List[float]
     intensities: List[float]
     zero_point_energy: float
+    displacements: Optional[dict]
 
 
 class IRRequest(BaseModel):
