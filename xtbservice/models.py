@@ -18,7 +18,7 @@ class IRResult(BaseModel):
     intensities: List[float]
     zeroPointEnergy: float
     displacements: Optional[Dict[int, str]]
-    mostRelevantModesOfQAtoms: Optional[Dict[int, List[int]]]
+    mostRelevantModesOfAtoms: Optional[Dict[int, List[int]]]
 
 
 class IRRequest(BaseModel):
