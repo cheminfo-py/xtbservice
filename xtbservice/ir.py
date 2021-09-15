@@ -48,14 +48,15 @@ def ir_from_smiles(smiles, method):
     return ir
 
 
-def get_max_displacements(ir):
+
+def get_max_displacements(ir): 
     mode_abs_displacements = []
-
+    
     for n in range(3 * len(ir.indices)):
-        mode_abs_displacements.append(np.linalg.norm(ir.get_mode(n), axis=1))
-
+        mode_abs_displacements.append(np.linalg.norm(ir.get_mode(n), axis=1)) 
+    
     mode_abs_displacements = np.stack(mode_abs_displacements)
-    return dict(zip(ir.indices, mode_abs_displacements.argmax(axis=0)))
+    return dict(zip(ir.indices, [list(a) for a in mode_abs_displacements.argsort(axis=0)]))
 
 
 def get_displacement_xyz_dict(ir):
