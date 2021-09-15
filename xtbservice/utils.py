@@ -26,3 +26,11 @@ def smiles2ase(smiles: str) -> Atoms:
     refmol = Chem.AddHs(Chem.Mol(mol))
     embed_conformer(refmol)
     return rdkit2ase(refmol)
+
+
+
+def hash_atoms(atoms: Atoms) -> str: 
+    symbols = str(atoms.symbols)
+    positions = str(atoms.positions) 
+
+    return hash(symbols + positions)
