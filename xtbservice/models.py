@@ -16,9 +16,9 @@ class OptimizationResult:
 class IRResult(BaseModel):
     wavenumbers: List[float]
     intensities: List[float]
-    zero_point_energy: float
+    zeroPointEnergy: float
     displacements: Optional[Dict[int, str]]
-    most_relevant_modes_of_atoms: Optional[Dict[int, int]]
+    mostRelevantModesOfQAtoms: Optional[Dict[int, List[int]]]
 
 
 class IRRequest(BaseModel):
