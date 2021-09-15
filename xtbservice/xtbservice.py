@@ -6,8 +6,24 @@ from . import __version__
 from fastapi import FastAPI
 from .ir import ir_from_smiles
 from .models import IRRequest, IRResult
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+ALLOWED_HOSTS = ["*"]
+
+
+app = FastAPI(
+    title="XTB webservice",
+    description="Offers xtb calculation tools",
+    version=__version__,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_HOSTS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/version")
