@@ -89,7 +89,7 @@ def compile_modes_info(ir):
                 "imaginary": True if c == "i" else False,
                 "mostDisplacedAtoms": [
                     int(i) for i in np.argsort(np.linalg.norm(ir.get_mode(n), axis=1))
-                ],
+                ][::-1],
             }
         )
 
@@ -104,7 +104,7 @@ def get_max_displacements(ir):
 
     mode_abs_displacements = np.stack(mode_abs_displacements)
     return dict(
-        zip(ir.indices, [list(a) for a in mode_abs_displacements.argsort(axis=0)])
+        zip(ir.indices, [list(a) for a in mode_abs_displacements.argsort(axis=0)][::-1])
     )
 
 
