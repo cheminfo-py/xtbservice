@@ -78,6 +78,9 @@ def compile_modes_info(ir):
     for n in range(3 * len(ir.indices)):
         f, c = clean_frequency(frequencies, n)
         has_imaginary = True if c == "i" else False
+        sum_of_abs_displ = np.abs(ir.get_mode(n)).sum(axis=1)
+        relative_displacement_contribution = sum_of_abs_displ / sum_of_abs_displ.sum()
+
         modes.append(
             {
                 "number": n,
@@ -90,6 +93,13 @@ def compile_modes_info(ir):
                 "mostDisplacedAtoms": [
                     int(i) for i in np.argsort(np.linalg.norm(ir.get_mode(n), axis=1))
                 ][::-1],
+                "mostContributingAtoms": [int(i) for i in 
+                    np.argwhere(
+                        relative_displacement_contribution
+                        / relative_displacement_contribution.sum()
+                        > 0.15
+                    ).flatten()
+                ],
             }
         )
 

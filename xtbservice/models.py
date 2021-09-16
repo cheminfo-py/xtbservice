@@ -20,7 +20,8 @@ class IRResult(BaseModel):
     modes: Optional[List[dict]]
     mostRelevantModesOfAtoms: Optional[Dict[int, List[int]]]
     hasImaginaryFrequency: bool
-
+    mostContributingAtoms: Optional[List[int]]
+    
 class IRRequest(BaseModel):
     smiles: Optional[str]
     molFile: Optional[str]
