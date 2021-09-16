@@ -22,6 +22,20 @@ def rdkit2ase(mol):
     return atoms
 
 
+def molfile2ase(molfile: str) -> Atoms:
+    try:
+        result = conformer_cache.get(molfile)
+    except KeyError:
+        pass
+
+    if result is None:
+        mol = Chem.MolFromMolBlock(molfile)
+        refmol = Chem.AddHs(Chem.Mol(mol))
+        embed_conformer(refmol)
+        result =  rdkit2ase(refmol)
+        conformer_cache.set(molfile, result)
+    return result
+
 def smiles2ase(smiles: str) -> Atoms:
     try:
         result = conformer_cache.get(smiles)

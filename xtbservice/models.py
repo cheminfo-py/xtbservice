@@ -22,7 +22,8 @@ class IRResult(BaseModel):
     hasImaginaryFrequency: bool
 
 class IRRequest(BaseModel):
-    smiles: str
+    smiles: Optional[str]
+    molFile: Optional[str]
     method: Optional[str] = "GFNFF"
 
     @validator('method')
@@ -30,3 +31,5 @@ class IRRequest(BaseModel):
         if not v in ALLOWED_METHODS:
             raise ValueError(f'method must be in {ALLOWED_METHODS}')
         return v
+    
+    

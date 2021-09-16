@@ -3,8 +3,8 @@ xtb-service.py
 webservice providing xtb calculations
 """
 from . import __version__
-from fastapi import FastAPI
-from .ir import ir_from_smiles
+from fastapi import FastAPI, HTTPException
+from .ir import ir_from_smiles, ir_from_molfile
 from .models import IRRequest, IRResult
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,7 +39,10 @@ def read_version():
 
 @app.post("/ir", response_model=IRResult)
 def post_get_ir_spectrum(irrequest: IRRequest):
-    ir = ir_from_smiles(irrequest.smiles, irrequest.method)
+    if irrequest.smiles:
+        ir = ir_from_smiles(irrequest.smiles, irrequest.method)
+    elif irrequest.molFile:
+        ir = ir_from_molfile(irrequest.molFile, irrequest.method)
     return ir
 
 

@@ -3,7 +3,7 @@ from copy import deepcopy
 from ase.vibrations import Infrared
 from xtb.ase.calculator import XTB
 from ase import Atoms
-from .utils import smiles2ase, hash_atoms
+from .utils import smiles2ase, hash_atoms, molfile2ase
 from .optimize import run_xtb_opt
 from functools import lru_cache
 from .cache import ir_cache
@@ -28,7 +28,7 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
         ir.run()
         spectrum = ir.get_spectrum()
         zpe = ir.get_zero_point_energy()
-        ir.clean()
+
         mode_info, has_imaginary = compile_modes_info(ir)
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -39,12 +39,21 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             mostRelevantModesOfAtoms=get_max_displacements(ir),
         )
         ir_cache.set(this_hash, result)
+        ir.clean()
     return result
 
 
 @lru_cache()
 def ir_from_smiles(smiles, method):
     atoms = smiles2ase(smiles)
+    opt_result = run_xtb_opt(atoms, method=method)
+    ir = run_xtb_ir(opt_result.atoms, method=method)
+    return ir
+
+
+@lru_cache()
+def ir_from_molfile(molfile, method):
+    atoms = molfile2ase(molfile)
     opt_result = run_xtb_opt(atoms, method=method)
     ir = run_xtb_ir(opt_result.atoms, method=method)
     return ir
