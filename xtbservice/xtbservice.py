@@ -15,12 +15,8 @@ app = FastAPI(
     title="XTB webservice",
     description="Offers xtb calculation tools. Allowed methods are `GFNFF`, `GFN2xTB`, `GFN1xTB`",
     version=__version__,
-    contact={
-        "name": "Cheminfo",
-        "email": "admin@cheminfo.org",
-    },
-    license_info={
-        "name": "MIT"}
+    contact={"name": "Cheminfo", "email": "admin@cheminfo.org",},
+    license_info={"name": "MIT"},
 )
 
 app.add_middleware(
@@ -43,11 +39,14 @@ def post_get_ir_spectrum(irrequest: IRRequest):
         ir = ir_from_smiles(irrequest.smiles, irrequest.method)
     elif irrequest.molFile:
         ir = ir_from_molfile(irrequest.molFile, irrequest.method)
+    else:
+        raise HTTPException(
+            status_code=422, detail="You need to provide either `molFile` or `smiles`"
+        )
     return ir
 
 
-
 @app.get("/ir", response_model=IRResult)
-def get_ir_spectrum(smiles: str, method: str = 'GFNFF'):
+def get_ir_spectrum(smiles: str, method: str = "GFNFF"):
     ir = ir_from_smiles(smiles, method)
     return ir
