@@ -26,7 +26,7 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
         atoms.calc = XTB(method=method)
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
-        spectrum = ir.get_spectrum()
+        spectrum = ir.get_spectrum(start=500, end=4000)
         zpe = ir.get_zero_point_energy()
 
         mode_info, has_imaginary = compile_modes_info(ir)
@@ -93,8 +93,9 @@ def compile_modes_info(ir):
                 "mostDisplacedAtoms": [
                     int(i) for i in np.argsort(np.linalg.norm(ir.get_mode(n), axis=1))
                 ][::-1],
-                "mostContributingAtoms": [int(i) for i in 
-                    np.argwhere(
+                "`mostContributingAtoms`": [
+                    int(i)
+                    for i in np.argwhere(
                         relative_displacement_contribution
                         / relative_displacement_contribution.sum()
                         > 0.15
