@@ -1,15 +1,17 @@
 
-from xtb.ase.calculator import XTB
-from ase.optimize.lbfgs import LBFGS
+import io
+from contextlib import redirect_stderr, redirect_stdout
 from copy import deepcopy
-from ase import Atoms
 from functools import lru_cache
+
+from ase import Atoms
+from ase.optimize.lbfgs import LBFGS
+from xtb.ase.calculator import XTB
+
+from .cache import opt_cache
 from .models import OptimizationResult
-from .cache import opt_cache
 from .utils import hash_atoms
-from .cache import opt_cache
-from contextlib import redirect_stdout, redirect_stderr
-import io 
+
 
 def opt_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)

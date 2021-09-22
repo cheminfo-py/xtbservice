@@ -2,13 +2,14 @@
 xtb-service.py
 webservice providing xtb calculations
 """
-from . import __version__
 from fastapi import FastAPI, HTTPException
-from .ir import ir_from_smiles, ir_from_molfile
-from .models import IRRequest, IRResult
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI, version
 from starlette.middleware import Middleware
+
+from . import __version__
+from .ir import ir_from_molfile, ir_from_smiles
+from .models import IRRequest, IRResult
 
 ALLOWED_HOSTS = ["*"]
 

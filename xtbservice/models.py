@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 import numpy as np
-from pydantic import BaseModel, validator, Field
-from typing import Optional, List, Dict
 from ase import Atoms
+from pydantic import BaseModel, Field, validator
 
 ALLOWED_METHODS = ("GFNFF", "GFN2xTB", "GFN1xTB")
 

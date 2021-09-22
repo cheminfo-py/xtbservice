@@ -1,15 +1,17 @@
-from .models import IRResult
-from ase.vibrations import Infrared
-from xtb.ase.calculator import XTB
-from ase import Atoms
-from .utils import smiles2ase, hash_atoms, molfile2ase, get_hash
-from .optimize import run_xtb_opt
-from functools import lru_cache
-from .cache import ir_cache, ir_from_smiles_cache, ir_from_molfile_cache
-import numpy as np
+import io
 import shutil
 from contextlib import redirect_stdout
-import io
+from functools import lru_cache
+
+import numpy as np
+from ase import Atoms
+from ase.vibrations import Infrared
+from xtb.ase.calculator import XTB
+
+from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
+from .models import IRResult
+from .optimize import run_xtb_opt
+from .utils import get_hash, hash_atoms, molfile2ase, smiles2ase
 
 
 def ir_hash(atoms, method):

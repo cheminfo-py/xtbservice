@@ -7,10 +7,9 @@ __copyright__ = "Copyright 2014, Stanford University"
 __license__ = "3-clause BSD"
 
 import numpy as np
-
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdDistGeom
+from rdkit.Chem import AllChem, rdDistGeom
+
 
 class ConformerGenerator(object):
     """
