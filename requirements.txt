@@ -5,3 +5,4 @@ httptools==0.3.0
 uvloop==0.15
 ase
 diskcache
+fastapi_versioning

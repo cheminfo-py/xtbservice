@@ -1,5 +1,4 @@
 from .models import IRResult
-from copy import deepcopy
 from ase.vibrations import Infrared
 from xtb.ase.calculator import XTB
 from ase import Atoms

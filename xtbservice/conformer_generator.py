@@ -112,7 +112,7 @@ class ConformerGenerator(object):
         param.pruneRmsThresh = 1
 
 
-        AllChem.EmbedMultipleConfs(mol, numConfs=n_confs, param =param)
+        AllChem.EmbedMultipleConfs(mol, numConfs=n_confs, params =param)
         return mol
 
     def get_molecule_force_field(self, mol, conf_id=None, **kwargs):
