@@ -11,6 +11,6 @@ jobs:
       - name: Build the Docker image
         run: pip3 install requests[security] && ./build_docker.sh
       - name: start the docker image
-        run: ./run_docker.sh && sleep 4s
+        run: ./run_docker.sh && sleep 10s
       - name: run the test
         run: cd test && python3 docker_test.py
