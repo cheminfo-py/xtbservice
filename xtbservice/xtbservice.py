@@ -7,6 +7,8 @@ from fastapi import FastAPI, HTTPException
 from .ir import ir_from_smiles, ir_from_molfile
 from .models import IRRequest, IRResult
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_versioning import VersionedFastAPI, version
+
 
 ALLOWED_HOSTS = ["*"]
 
@@ -28,12 +30,14 @@ app.add_middleware(
 )
 
 
-@app.get("/version")
+@app.get("/app_version")
+@version(1)
 def read_version():
-    return {"version": __version__}
+    return {"app_version": __version__}
 
 
 @app.post("/ir", response_model=IRResult)
+@version(1)
 def post_get_ir_spectrum(irrequest: IRRequest):
     if irrequest.smiles:
         ir = ir_from_smiles(irrequest.smiles, irrequest.method)
@@ -47,6 +51,11 @@ def post_get_ir_spectrum(irrequest: IRRequest):
 
 
 @app.get("/ir", response_model=IRResult)
+@version(1)
 def get_ir_spectrum(smiles: str, method: str = "GFNFF"):
     ir = ir_from_smiles(smiles, method)
     return ir
+
+app = VersionedFastAPI(app,
+    version_format='{major}',
+    prefix_format='/v{major}')
