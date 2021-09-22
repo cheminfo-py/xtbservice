@@ -8,8 +8,6 @@ def embed_conformer(mol, num_conformer: int = 10, prune_tresh: float = 0.1):
     """Use Riniker/Landrum conformer generator: https://pubs.acs.org/doi/10.1021/acs.jcim.5b00654"""
     conf_generator = ConformerGenerator()
     return conf_generator.generate_conformers(mol)
-    # mp = AllChem.MMFFGetMoleculeProperties(mol, mmffVariant='MMFF94s')
-    # AllChem.MMFFOptimizeMoleculeConfs(mol, numThreads=0, mmffVariant='MMFF94s')
 
 
 def rdkit2ase(mol):

@@ -8,7 +8,7 @@ from .ir import ir_from_smiles, ir_from_molfile
 from .models import IRRequest, IRResult
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI, version
-
+from starlette.middleware import Middleware
 
 ALLOWED_HOSTS = ["*"]
 
@@ -19,14 +19,6 @@ app = FastAPI(
     version=__version__,
     contact={"name": "Cheminfo", "email": "admin@cheminfo.org",},
     license_info={"name": "MIT"},
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_HOSTS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 
@@ -56,6 +48,18 @@ def get_ir_spectrum(smiles: str, method: str = "GFNFF"):
     ir = ir_from_smiles(smiles, method)
     return ir
 
-app = VersionedFastAPI(app,
-    version_format='{major}',
-    prefix_format='/v{major}')
+
+app = VersionedFastAPI(
+    app,
+    version_format="{major}",
+    prefix_format="/v{major}",
+    middleware=[
+        Middleware(
+            CORSMiddleware,
+            allow_origins=ALLOWED_HOSTS,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    ],
+)
