@@ -8,6 +8,8 @@ from .models import OptimizationResult
 from .cache import opt_cache
 from .utils import hash_atoms
 from .cache import opt_cache
+from contextlib import redirect_stdout, redirect_stderr
+import io 
 
 def opt_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)
@@ -23,6 +25,8 @@ def run_xtb_opt(
     if result is None:
         mol = deepcopy(atoms)
         mol.pbc = False
+        
+
         mol.calc = XTB(method=method)
         opt = LBFGS(mol, logfile=None)
         opt.run(fmax=fmax)

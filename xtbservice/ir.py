@@ -8,6 +8,8 @@ from functools import lru_cache
 from .cache import ir_cache, ir_from_smiles_cache, ir_from_molfile_cache
 import numpy as np
 import shutil
+from contextlib import redirect_stdout
+import io 
 
 
 def ir_hash(atoms, method):
@@ -24,6 +26,8 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
     if result is None:
         atoms.pbc = False
         atoms.calc = XTB(method=method)
+                
+
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
         spectrum = ir.get_spectrum(start=500, end=4000)
@@ -46,6 +50,7 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
 
 def ir_from_smiles(smiles, method):
     myhash = str(hash(smiles+method))
+    print(myhash)
     try:
         result = ir_from_smiles_cache.get(myhash)
     except KeyError:
@@ -53,12 +58,11 @@ def ir_from_smiles(smiles, method):
     if result is None:
         atoms = smiles2ase(smiles)
         opt_result = run_xtb_opt(atoms, method=method)
-        ir = run_xtb_ir(opt_result.atoms, method=method)
-        ir_from_smiles_cache.set(myhash, ir)
-    return ir
+        result = run_xtb_ir(opt_result.atoms, method=method)
+        ir_from_smiles_cache.set(myhash, result)
+    return result
 
 
-@lru_cache()
 def ir_from_molfile(molfile, method):
     myhash = str(hash(molfile+method))
     try:
@@ -68,9 +72,9 @@ def ir_from_molfile(molfile, method):
     if result is  None:
         atoms = molfile2ase(molfile)
         opt_result = run_xtb_opt(atoms, method=method)
-        ir = run_xtb_ir(opt_result.atoms, method=method)
-        ir_from_molfile_cache.set(myhash, ir)
-    return ir
+        result = run_xtb_ir(opt_result.atoms, method=method)
+        ir_from_molfile_cache.set(myhash, result)
+    return result
 
 
 def clean_frequency(frequencies, n):
@@ -109,11 +113,7 @@ def compile_modes_info(ir):
                 ][::-1],
                 "mostContributingAtoms": [
                     int(i)
-                    for i in np.argwhere(
-                        relative_displacement_contribution
-                        / relative_displacement_contribution.sum()
-                        > 0.15
-                    ).flatten()
+                    for i in select_most_contributing_atoms(ir, n)
                 ],
             }
         )
@@ -169,3 +169,9 @@ def get_displacement_xyz_dict(ir):
         modes[n] = get_displacement_xyz_for_mode(ir, frequencies, symbols, n)
 
     return modes
+
+
+def select_most_contributing_atoms(ir, mode, threshold: float = 0.4): 
+    relative_contribution = np.linalg.norm(ir.get_mode(mode), axis=1) / np.linalg.norm(ir.get_mode(mode), axis=1).sum()
+    x = np.arange(len(relative_contribution))
+    return np.where(relative_contribution> threshold * np.max(np.abs(np.diff(relative_contribution))))[0]
