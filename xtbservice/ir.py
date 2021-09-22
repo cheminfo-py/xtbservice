@@ -6,7 +6,7 @@ from ase import Atoms
 from .utils import smiles2ase, hash_atoms, molfile2ase
 from .optimize import run_xtb_opt
 from functools import lru_cache
-from .cache import ir_cache
+from .cache import ir_cache, ir_from_smiles_cache, ir_from_molfile_cache
 import numpy as np
 import shutil
 
@@ -45,20 +45,32 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
         ir.clean()
     return result
 
-
-@lru_cache()
 def ir_from_smiles(smiles, method):
-    atoms = smiles2ase(smiles)
-    opt_result = run_xtb_opt(atoms, method=method)
-    ir = run_xtb_ir(opt_result.atoms, method=method)
+    myhash = str(hash(smiles+method))
+    try:
+        result = ir_from_smiles_cache.get(myhash)
+    except KeyError:
+        pass
+    if result is None:
+        atoms = smiles2ase(smiles)
+        opt_result = run_xtb_opt(atoms, method=method)
+        ir = run_xtb_ir(opt_result.atoms, method=method)
+        ir_from_smiles_cache.set(myhash, ir)
     return ir
 
 
 @lru_cache()
 def ir_from_molfile(molfile, method):
-    atoms = molfile2ase(molfile)
-    opt_result = run_xtb_opt(atoms, method=method)
-    ir = run_xtb_ir(opt_result.atoms, method=method)
+    myhash = str(hash(molfile+method))
+    try:
+        result = ir_from_molfile_cache.get(myhash)
+    except KeyError:
+        pass
+    if result is  None:
+        atoms = molfile2ase(molfile)
+        opt_result = run_xtb_opt(atoms, method=method)
+        ir = run_xtb_ir(opt_result.atoms, method=method)
+        ir_from_molfile_cache.set(myhash, ir)
     return ir
 
 
