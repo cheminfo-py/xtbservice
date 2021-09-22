@@ -7,7 +7,7 @@ import requests
 
 r = requests.get("http://localhost:8091/v1/app_version/")
 keys = r.json().keys()
-if "version" in keys:
+if "app_version" in keys:
     print("OK")
     sys.exit(0)
 else:
