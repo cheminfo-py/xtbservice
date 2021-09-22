@@ -40,8 +40,8 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             mostRelevantModesOfAtoms=get_max_displacements(ir),
         )
         ir_cache.set(this_hash, result)
-        print(ir.cache.directory)
-        #shutil.rmtree(ir.cache.directory)
+    
+        shutil.rmtree(ir.cache.directory)
         ir.clean()
     return result
 
@@ -96,7 +96,7 @@ def compile_modes_info(ir):
                 "mostDisplacedAtoms": [
                     int(i) for i in np.argsort(np.linalg.norm(ir.get_mode(n), axis=1))
                 ][::-1],
-                "`mostContributingAtoms`": [
+                "mostContributingAtoms": [
                     int(i)
                     for i in np.argwhere(
                         relative_displacement_contribution

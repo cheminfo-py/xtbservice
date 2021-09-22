@@ -10,7 +10,7 @@ import numpy as np
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-
+from rdkit.Chem import rdDistGeom
 
 class ConformerGenerator(object):
     """
@@ -108,7 +108,7 @@ class ConformerGenerator(object):
         """
         mol = Chem.AddHs(mol)  # add hydrogens
         n_confs = self.max_conformers * self.pool_multiplier
-        param = rdDistGeom.ETKDGv2()
+        param = rdDistGeom.ETKDGv3()
         param.pruneRmsThresh = 1
 
 
