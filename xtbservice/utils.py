@@ -3,6 +3,7 @@ from rdkit.Chem import rdDistGeom
 from ase import Atoms
 from .cache import conformer_cache
 from .conformer_generator import ConformerGenerator
+import hashlib 
 
 def embed_conformer(mol, num_conformer: int = 10, prune_tresh: float = 0.1):
     """Use Riniker/Landrum conformer generator: https://pubs.acs.org/doi/10.1021/acs.jcim.5b00654"""
@@ -28,11 +29,10 @@ def molfile2ase(molfile: str) -> Atoms:
 
     if result is None:
         mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
-        #Chem.calcImplicitValence(mol)
         mol.UpdatePropertyCache(strict=False)
         mol = embed_conformer(mol)
         result =  rdkit2ase(mol)
-        conformer_cache.set(molfile, result)
+        conformer_cache.set(molfile, result,  expire=None)
     return result
 
 def smiles2ase(smiles: str) -> Atoms:
@@ -46,7 +46,7 @@ def smiles2ase(smiles: str) -> Atoms:
         refmol = Chem.AddHs(Chem.Mol(mol))
         refmol = embed_conformer(refmol)
         result =  rdkit2ase(refmol)
-        conformer_cache.set(smiles, result)
+        conformer_cache.set(smiles, result,  expire=None)
     return result
 
 
@@ -56,3 +56,7 @@ def hash_atoms(atoms: Atoms) -> str:
     positions = str(atoms.positions) 
 
     return hash(symbols + positions)
+
+
+def get_hash(string): 
+    return hashlib.md5(string.encode("utf-8")).hexdigest()

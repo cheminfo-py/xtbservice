@@ -2,14 +2,14 @@ from .models import IRResult
 from ase.vibrations import Infrared
 from xtb.ase.calculator import XTB
 from ase import Atoms
-from .utils import smiles2ase, hash_atoms, molfile2ase
+from .utils import smiles2ase, hash_atoms, molfile2ase, get_hash
 from .optimize import run_xtb_opt
 from functools import lru_cache
 from .cache import ir_cache, ir_from_smiles_cache, ir_from_molfile_cache
 import numpy as np
 import shutil
 from contextlib import redirect_stdout
-import io 
+import io
 
 
 def ir_hash(atoms, method):
@@ -19,14 +19,12 @@ def ir_hash(atoms, method):
 def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
     # mol = deepcopy(atoms)
     this_hash = ir_hash(atoms, method)
-    try:
-        result = ir_cache.get(this_hash)
-    except KeyError:
-        pass
+
+    result = ir_cache.get(this_hash)
+
     if result is None:
         atoms.pbc = False
         atoms.calc = XTB(method=method)
-                
 
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
@@ -43,37 +41,35 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             mostRelevantModesOfAtoms=get_max_displacements(ir),
         )
         ir_cache.set(this_hash, result)
-    
+
         shutil.rmtree(ir.cache.directory)
         ir.clean()
     return result
 
+
 def ir_from_smiles(smiles, method):
-    myhash = str(hash(smiles+method))
-    print(myhash)
-    try:
-        result = ir_from_smiles_cache.get(myhash)
-    except KeyError:
-        pass
+    myhash = str(get_hash(smiles + method))
+
+    result = ir_from_smiles_cache.get(myhash)
+
     if result is None:
         atoms = smiles2ase(smiles)
         opt_result = run_xtb_opt(atoms, method=method)
         result = run_xtb_ir(opt_result.atoms, method=method)
-        ir_from_smiles_cache.set(myhash, result)
+        ir_from_smiles_cache.set(myhash, result, expire=None)
     return result
 
 
 def ir_from_molfile(molfile, method):
-    myhash = str(hash(molfile+method))
-    try:
-        result = ir_from_molfile_cache.get(myhash)
-    except KeyError:
-        pass
-    if result is  None:
+    myhash = str(get_hash(molfile + method))
+
+    result = ir_from_molfile_cache.get(myhash)
+
+    if result is None:
         atoms = molfile2ase(molfile)
         opt_result = run_xtb_opt(atoms, method=method)
         result = run_xtb_ir(opt_result.atoms, method=method)
-        ir_from_molfile_cache.set(myhash, result)
+        ir_from_molfile_cache.set(myhash, result, expire=None)
     return result
 
 
@@ -97,7 +93,7 @@ def compile_modes_info(ir):
         f, c = clean_frequency(frequencies, n)
         has_imaginary = True if c == "i" else False
         sum_of_abs_displ = np.abs(ir.get_mode(n)).sum(axis=1)
-        relative_displacement_contribution = sum_of_abs_displ / sum_of_abs_displ.sum()
+        #relative_displacement_contribution = sum_of_abs_displ / sum_of_abs_displ.sum()
 
         modes.append(
             {
@@ -112,8 +108,7 @@ def compile_modes_info(ir):
                     int(i) for i in np.argsort(np.linalg.norm(ir.get_mode(n), axis=1))
                 ][::-1],
                 "mostContributingAtoms": [
-                    int(i)
-                    for i in select_most_contributing_atoms(ir, n)
+                    int(i) for i in select_most_contributing_atoms(ir, n)
                 ],
             }
         )
@@ -171,7 +166,14 @@ def get_displacement_xyz_dict(ir):
     return modes
 
 
-def select_most_contributing_atoms(ir, mode, threshold: float = 0.4): 
-    relative_contribution = np.linalg.norm(ir.get_mode(mode), axis=1) / np.linalg.norm(ir.get_mode(mode), axis=1).sum()
+def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
+    relative_contribution = (
+        np.linalg.norm(ir.get_mode(mode), axis=1)
+        / np.linalg.norm(ir.get_mode(mode), axis=1).sum()
+    )
     x = np.arange(len(relative_contribution))
-    return np.where(relative_contribution> threshold * np.max(np.abs(np.diff(relative_contribution))))[0]
+    return np.where(
+        relative_contribution
+        > threshold * np.max(np.abs(np.diff(relative_contribution)))
+    )[0]
+

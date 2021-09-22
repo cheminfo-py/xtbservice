@@ -33,6 +33,6 @@ def run_xtb_opt(
         forces = mol.get_forces()
         energy = mol.get_potential_energy()
         mol.calc = None
-        opt_cache.set(this_hash, result)
+        opt_cache.set(this_hash, result,  expire=None)
         result =  OptimizationResult(atoms=mol, forces=forces, energy=energy)
     return result
