@@ -8,6 +8,7 @@ from .optimize import run_xtb_opt
 from functools import lru_cache
 from .cache import ir_cache
 import numpy as np
+import shutil
 
 
 def ir_hash(atoms, method):
@@ -39,6 +40,8 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             mostRelevantModesOfAtoms=get_max_displacements(ir),
         )
         ir_cache.set(this_hash, result)
+        print(ir.cache.directory)
+        #shutil.rmtree(ir.cache.directory)
         ir.clean()
     return result
 

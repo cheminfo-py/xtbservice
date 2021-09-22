@@ -30,7 +30,8 @@ def molfile2ase(molfile: str) -> Atoms:
 
     if result is None:
         mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
-        #refmol = Chem.AddHs(Chem.Mol(mol))
+        #Chem.calcImplicitValence(mol)
+        mol.UpdatePropertyCache(strict=False)
         embed_conformer(mol)
         result =  rdkit2ase(mol)
         conformer_cache.set(molfile, result)
