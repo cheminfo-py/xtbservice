@@ -28,7 +28,7 @@ def molfile2ase(molfile: str) -> Atoms:
         pass
 
     if result is None:
-        mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
+        mol = Chem.MolFromMolBlock(molfile, sanitize=True, removeHs=False)
         mol.UpdatePropertyCache(strict=False)
         mol = embed_conformer(mol)
         result =  rdkit2ase(mol)
