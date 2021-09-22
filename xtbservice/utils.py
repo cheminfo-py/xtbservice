@@ -29,10 +29,10 @@ def molfile2ase(molfile: str) -> Atoms:
         pass
 
     if result is None:
-        mol = Chem.MolFromMolBlock(molfile)
-        refmol = Chem.AddHs(Chem.Mol(mol))
-        embed_conformer(refmol)
-        result =  rdkit2ase(refmol)
+        mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
+        #refmol = Chem.AddHs(Chem.Mol(mol))
+        embed_conformer(mol)
+        result =  rdkit2ase(mol)
         conformer_cache.set(molfile, result)
     return result
 
