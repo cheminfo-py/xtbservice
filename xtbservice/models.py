@@ -6,6 +6,7 @@ from ase import Atoms
 from pydantic import BaseModel, Field, validator
 
 ALLOWED_METHODS = ("GFNFF", "GFN2xTB", "GFN1xTB")
+ALLOWED_FF = ("uff", "mmff94", "mmff94s")
 
 
 @dataclass
@@ -54,3 +55,42 @@ class IRRequest(BaseModel):
             raise ValueError(f"method must be in {ALLOWED_METHODS}")
         return v
 
+
+class ConformerRequest(BaseModel):
+    smiles: Optional[str] = Field(
+        None,
+        description="SMILES string of input molecule. The service will add implicit hydrogens",
+    )
+    molFile: Optional[str] = Field(
+        None,
+        description="String with molfile with expanded hydrogens. The service will not attempt to add implicit hydrogens to ensure that the atom ordering is preserved.",
+    )
+    forceField: Optional[str] = Field(
+        "uff",
+        description="String with method force field that is used for energy minimization. Options are 'uff', 'mmff94', and 'mmff94s'",
+    )
+    rmsdThreshold: Optional[float] = Field(
+        0.5, description="RMSD threshold that is used to prune conformer library."
+    )
+    maxConformers: Optional[int] = Field(
+        1,
+        description="Maximum number of conformers that are generated (after pruning).",
+    )
+
+    @validator("forceField")
+    def method_match(cls, v):
+        if not v in ALLOWED_FF:
+            raise ValueError(f"forceField must be in {ALLOWED_FF}")
+        return v
+
+
+class Conformer(BaseModel):
+    molFile: str = Field(
+        None,
+        description="String with molfile.",
+    )
+    energy: str = Field(None, description="Final energy after energy minimization.",)
+
+
+class ConformerLibrary(BaseModel):
+    conformers: List[Conformer]
