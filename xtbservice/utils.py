@@ -27,7 +27,7 @@ def molfile2ase(molfile: str) -> Atoms:
         mol = Chem.MolFromMolBlock(molfile, sanitize=True, removeHs=False)
         mol.UpdatePropertyCache(strict=False)
         mol = embed_conformer(mol)
-        result =  rdkit2ase(mol)
+        result =  rdkit2ase(mol), mol
         conformer_cache.set(molfile, result,  expire=None)
     return result
 
@@ -41,7 +41,7 @@ def smiles2ase(smiles: str) -> Atoms:
         mol = Chem.MolFromSmiles(smiles)
         refmol = Chem.AddHs(Chem.Mol(mol))
         refmol = embed_conformer(refmol)
-        result =  rdkit2ase(refmol)
+        result =  rdkit2ase(refmol), refmol
         conformer_cache.set(smiles, result,  expire=None)
     return result
 

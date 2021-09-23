@@ -2,7 +2,8 @@ import io
 import shutil
 from contextlib import redirect_stdout
 from functools import lru_cache
-
+from rdkit import Chem
+from typing import Union, List
 import numpy as np
 from ase import Atoms
 from ase.vibrations import Infrared
@@ -18,7 +19,9 @@ def ir_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)
 
 
-def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
+def run_xtb_ir(
+    atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
+) -> IRResult:
     # mol = deepcopy(atoms)
     this_hash = ir_hash(atoms, method)
 
@@ -32,8 +35,19 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
         ir.run()
         spectrum = ir.get_spectrum(start=500, end=4000)
         zpe = ir.get_zero_point_energy()
-
-        mode_info, has_imaginary = compile_modes_info(ir)
+        most_relevant_mode_for_bond = None
+        bond_displacements = None
+        if mol is not None:
+            bond_displacements = compile_all_bond_displacements(mol, atoms, ir)
+            most_relevant_mode_for_bond_ = np.argmax(bond_displacements, axis=0)
+            most_relevant_mode_for_bond = []
+            bonds = get_bonds_from_mol(mol)
+            for i, mode in enumerate(most_relevant_mode_for_bond_):
+                most_relevant_mode_for_bond.append(
+                    {"startAtom": bonds[i][0], "endAtom": bonds[i][1], "mode": int(mode), "displacement": bond_displacements[mode][i]}
+                )
+         
+        mode_info, has_imaginary = compile_modes_info(ir, bond_displacements, bonds)
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
@@ -41,6 +55,7 @@ def run_xtb_ir(atoms: Atoms, method: str = "GFNFF") -> IRResult:
             modes=mode_info,
             hasImaginaryFrequency=has_imaginary,
             mostRelevantModesOfAtoms=get_max_displacements(ir),
+            mostRelevantModesOfBonds=most_relevant_mode_for_bond
         )
         ir_cache.set(this_hash, result)
 
@@ -55,9 +70,9 @@ def ir_from_smiles(smiles, method):
     result = ir_from_smiles_cache.get(myhash)
 
     if result is None:
-        atoms = smiles2ase(smiles)
+        atoms, mol = smiles2ase(smiles)
         opt_result = run_xtb_opt(atoms, method=method)
-        result = run_xtb_ir(opt_result.atoms, method=method)
+        result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
         ir_from_smiles_cache.set(myhash, result, expire=None)
     return result
 
@@ -68,11 +83,21 @@ def ir_from_molfile(molfile, method):
     result = ir_from_molfile_cache.get(myhash)
 
     if result is None:
-        atoms = molfile2ase(molfile)
+        atoms, mol = molfile2ase(molfile)
         opt_result = run_xtb_opt(atoms, method=method)
-        result = run_xtb_ir(opt_result.atoms, method=method)
+        result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
         ir_from_molfile_cache.set(myhash, result, expire=None)
     return result
+
+
+def compile_all_bond_displacements(mol, atoms, ir):
+    bond_displacements = []
+    for mode_number in range(3 * len(ir.indices)):
+        bond_displacements.append(
+            get_bond_displacements(mol, atoms, ir.get_mode(mode_number))
+        )
+
+    return np.vstack(bond_displacements)
 
 
 def clean_frequency(frequencies, n):
@@ -86,7 +111,7 @@ def clean_frequency(frequencies, n):
     return freq, c
 
 
-def compile_modes_info(ir):
+def compile_modes_info(ir, bond_displacements=None, bonds=None):
     frequencies = ir.get_frequencies()
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
@@ -94,9 +119,10 @@ def compile_modes_info(ir):
     for n in range(3 * len(ir.indices)):
         f, c = clean_frequency(frequencies, n)
         has_imaginary = True if c == "i" else False
-        sum_of_abs_displ = np.abs(ir.get_mode(n)).sum(axis=1)
-        #relative_displacement_contribution = sum_of_abs_displ / sum_of_abs_displ.sum()
-
+        mostContributingBonds = None
+        if bond_displacements is not None: 
+            mostContributingBonds = select_most_contributing_bonds(bond_displacements[n,:])
+            mostContributingBonds = [bonds[i] for i in mostContributingBonds]
         modes.append(
             {
                 "number": n,
@@ -112,6 +138,7 @@ def compile_modes_info(ir):
                 "mostContributingAtoms": [
                     int(i) for i in select_most_contributing_atoms(ir, n)
                 ],
+                "mostContributingBonds": mostContributingBonds
             }
         )
 
@@ -173,9 +200,54 @@ def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
         np.linalg.norm(ir.get_mode(mode), axis=1)
         / np.linalg.norm(ir.get_mode(mode), axis=1).sum()
     )
-    x = np.arange(len(relative_contribution))
+
     return np.where(
         relative_contribution
         > threshold * np.max(np.abs(np.diff(relative_contribution)))
     )[0]
+
+
+
+def select_most_contributing_bonds(displacements, threshold: float = 0.4):
+    relative_contribution = displacements / displacements.sum()
+
+    return np.where(
+        relative_contribution
+        > threshold * np.max(np.abs(np.diff(relative_contribution)))
+    )[0]
+
+
+@lru_cache()
+def get_bonds_from_mol(mol) -> List[tuple]:
+    all_bonds = []
+    for i in range(mol.GetNumBonds()):
+        bond = mol.GetBondWithIdx(i)
+        all_bonds.append((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+
+    return all_bonds
+
+
+def get_bond_vector(positions, bond):
+    return positions[bond[1]] - positions[bond[0]]
+
+
+def get_displaced_positions(positions, mode):
+    return positions + mode
+
+
+def get_bond_displacements(mol, atoms, mode):
+    bonds = get_bonds_from_mol(mol)
+    positions = atoms.positions
+    displaced_positions = get_displaced_positions(positions, mode)
+    changes = []
+
+    for bond in bonds:
+        changes.append(
+            np.linalg.norm(
+                get_bond_vector(positions, bond)
+                - get_bond_vector(displaced_positions, bond)
+            )
+        )
+
+    return changes
 

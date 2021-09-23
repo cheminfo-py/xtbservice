@@ -30,6 +30,10 @@ class IRResult(BaseModel):
         None,
         description="Dictionary indexed with atom indices (zero indexed) and mode indices (zero indexed) as values that is most relevant for a given",
     )
+    mostRelevantModesOfBonds: Optional[List[dict]] = Field(
+        None,
+        description="List of dictionaries with the key `startAtom`, `endAtom` and `mode`",
+    )
     hasImaginaryFrequency: bool = Field(
         None, description="True if there is any mode with imaginary frequency"
     )
