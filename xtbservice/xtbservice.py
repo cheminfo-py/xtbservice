@@ -9,7 +9,8 @@ from starlette.middleware import Middleware
 
 from . import __version__
 from .ir import ir_from_molfile, ir_from_smiles
-from .models import IRRequest, IRResult
+from .models import IRRequest, IRResult, ConformerRequest, ConformerLibrary
+from .conformers import conformers_from_molfile, conformers_from_smiles
 
 ALLOWED_HOSTS = ["*"]
 
@@ -41,6 +42,30 @@ def post_get_ir_spectrum(irrequest: IRRequest):
             status_code=422, detail="You need to provide either `molFile` or `smiles`"
         )
     return ir
+
+
+@app.post("/conformers", response_model=ConformerLibrary)
+@version(1)
+def post_conformers(conformerrequest: ConformerRequest):
+    if conformerrequest.smiles:
+        conformers = conformers_from_smiles(
+            conformerrequest.smiles,
+            conformerrequest.forceField,
+            conformerrequest.rmsdThreshold,
+            conformerrequest.maxConformers,
+        )
+    elif conformerrequest.molFile:
+        conformers = conformers_from_molfile(
+            conformerrequest.molFile,
+            conformerrequest.forceField,
+            conformerrequest.rmsdThreshold,
+            conformerrequest.maxConformers,
+        )
+    else:
+        raise HTTPException(
+            status_code=422, detail="You need to provide either `molFile` or `smiles`"
+        )
+    return conformers
 
 
 @app.get("/ir", response_model=IRResult)

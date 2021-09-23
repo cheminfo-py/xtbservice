@@ -77,6 +77,7 @@ class ConformerGenerator(object):
         ----------
         mol : RDKit Mol
             Molecule.
+        energies: A list of minimized conformer energies. 
         """
 
         # initial embedding
@@ -92,9 +93,9 @@ class ConformerGenerator(object):
 
         # minimization and pruning
         self.minimize_conformers(mol)
-        mol = self.prune_conformers(mol)
+        mol, energies = self.prune_conformers(mol)
 
-        return mol
+        return mol, energies
 
     def embed_molecule(self, mol):
         """
@@ -188,13 +189,16 @@ class ConformerGenerator(object):
 
         Returns
         -------
-        A new RDKit Mol containing the chosen conformers, sorted by
-        increasing energy.
+        mol: A new RDKit Mol containing the chosen conformers, sorted by
+            increasing energy.
+        energies: A list of minimized conformer energies. 
         """
-        if self.rmsd_threshold < 0 or mol.GetNumConformers() <= 1:
-            return mol
         energies = self.get_conformer_energies(mol)
         rmsd = self.get_conformer_rmsd(mol)
+
+        if self.rmsd_threshold < 0 or mol.GetNumConformers() <= 1:
+            return mol, energies
+       
 
         sort = np.argsort(energies)  # sort by increasing energy
         keep = []  # always keep lowest-energy conformer
@@ -225,10 +229,13 @@ class ConformerGenerator(object):
         new = Chem.Mol(mol)
         new.RemoveAllConformers()
         conf_ids = [conf.GetId() for conf in mol.GetConformers()]
+        kept_energies = []
         for i in keep:
+            kept_energies.append(energies[i])
             conf = mol.GetConformer(conf_ids[i])
             new.AddConformer(conf, assignId=True)
-        return new
+        print(new, kept_energies)
+        return new, kept_energies
 
     @staticmethod
     def get_conformer_rmsd(mol):

@@ -2,16 +2,9 @@ import hashlib
 
 from ase import Atoms
 from rdkit import Chem
-from rdkit.Chem import rdDistGeom
 
 from .cache import conformer_cache
-from .conformer_generator import ConformerGenerator
-
-
-def embed_conformer(mol, num_conformer: int = 10, prune_tresh: float = 0.1):
-    """Use Riniker/Landrum conformer generator: https://pubs.acs.org/doi/10.1021/acs.jcim.5b00654"""
-    conf_generator = ConformerGenerator()
-    return conf_generator.generate_conformers(mol)
+from .conformers import embed_conformer
 
 
 def rdkit2ase(mol):
