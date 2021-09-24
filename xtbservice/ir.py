@@ -263,7 +263,7 @@ def get_bond_displacements(mol, atoms, mode):
     changes = []
 
     for bond in bonds:
-        get_bond_displacements =    get_bond_vector(positions, bond) - get_bond_vector(displaced_positions, bond)
+        get_bond_displacements =    np.linalg.norm(get_bond_vector(positions, bond)) - np.linalg.norm(get_bond_vector(displaced_positions, bond))
 
         changes.append(
             np.linalg.norm(
