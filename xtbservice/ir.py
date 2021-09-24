@@ -188,16 +188,14 @@ def get_max_displacements(ir, linear):
     for n in range(3 * len(ir.indices)):
         mode_abs_displacements.append(np.linalg.norm(ir.get_mode(n), axis=1))
 
- 
-
     mode_abs_displacements = np.stack(mode_abs_displacements)
-    if linear: 
-        mode_abs_displacements[:5,:] = 0
-    else: 
-        mode_abs_displacements[:6,:] = 0
+    if linear:
+        mode_abs_displacements[:5, :] = 0
+    else:
+        mode_abs_displacements[:6, :] = 0
 
     return dict(
-        zip(ir.indices, [list(a) for a in mode_abs_displacements.argsort(axis=0)][::-1])
+        zip(ir.indices, [list(a)[::-1] for a in mode_abs_displacements.argsort(axis=0).T])
     )
 
 
