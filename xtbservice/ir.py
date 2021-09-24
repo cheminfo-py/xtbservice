@@ -40,7 +40,13 @@ def run_xtb_ir(
         bond_displacements = None
         if mol is not None:
             bond_displacements = compile_all_bond_displacements(mol, atoms, ir)
-            most_relevant_mode_for_bond_ = np.argmax(bond_displacements, axis=0)
+            mask = np.zeros_like(bond_displacements)
+            if linear:
+                mask[:5, :] = 1
+            else:
+                mask[:6, :] = 1
+            masked_bond_displacements = np.ma.masked_array(bond_displacements, mask)
+            most_relevant_mode_for_bond_ = masked_bond_displacements.argmax(axis=0)
             most_relevant_mode_for_bond = []
             bonds = get_bonds_from_mol(mol)
             for i, mode in enumerate(most_relevant_mode_for_bond_):
@@ -62,7 +68,7 @@ def run_xtb_ir(
             zeroPointEnergy=zpe,
             modes=mode_info,
             hasImaginaryFrequency=has_imaginary,
-            mostRelevantModesOfAtoms=get_max_displacements(ir),
+            mostRelevantModesOfAtoms=get_max_displacements(ir, linear),
             mostRelevantModesOfBonds=most_relevant_mode_for_bond,
             isLinear=linear,
             momentsOfInertia=[float(i) for i in moi],
@@ -169,20 +175,27 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
                 # "centerOfMassDisplacement": float(
                 #     np.linalg.norm(ir.get_mode(n).sum(axis=0))
                 # ),
-               # "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
+                # "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
             }
         )
 
     return modes, has_imaginary
 
 
-def get_max_displacements(ir):
+def get_max_displacements(ir, linear):
     mode_abs_displacements = []
 
     for n in range(3 * len(ir.indices)):
         mode_abs_displacements.append(np.linalg.norm(ir.get_mode(n), axis=1))
 
+ 
+
     mode_abs_displacements = np.stack(mode_abs_displacements)
+    if linear: 
+        mode_abs_displacements[:5,:] = 0
+    else: 
+        mode_abs_displacements[:6,:] = 0
+
     return dict(
         zip(ir.indices, [list(a) for a in mode_abs_displacements.argsort(axis=0)][::-1])
     )
