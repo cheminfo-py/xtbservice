@@ -166,9 +166,9 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
                 ],
                 "mostContributingBonds": mostContributingBonds,
                 "modeType": modeType,
-                "centerOfMassDisplacement": float(
-                    np.linalg.norm(ir.get_mode(n).sum(axis=0))
-                ),
+                # "centerOfMassDisplacement": float(
+                #     np.linalg.norm(ir.get_mode(n).sum(axis=0))
+                # ),
                # "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
             }
         )
