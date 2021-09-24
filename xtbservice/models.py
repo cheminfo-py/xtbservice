@@ -37,7 +37,8 @@ class IRResult(BaseModel):
     hasImaginaryFrequency: bool = Field(
         None, description="True if there is any mode with imaginary frequency"
     )
-
+    isLinear: bool = Field(None, description="True if the molecule is linear.")
+    momentsOfInertia: List[float] = Field(None, description="Moments of inertia around principal axes. For a linear molecule one only expects two non-zero components.")
 
 class IRRequest(BaseModel):
     smiles: Optional[str] = Field(
