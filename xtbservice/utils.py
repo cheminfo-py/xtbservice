@@ -2,7 +2,8 @@ import hashlib
 
 from ase import Atoms
 from rdkit import Chem
-
+import numpy as np 
+from functools import lru_cache
 from .cache import conformer_cache
 from .conformers import embed_conformer
 
@@ -56,3 +57,39 @@ def hash_atoms(atoms: Atoms) -> str:
 
 def get_hash(string): 
     return hashlib.md5(string.encode("utf-8")).hexdigest()
+
+def get_center_of_mass(masses, positions):
+    return masses @ positions / masses.sum()
+
+def get_moments_of_inertia(positions, masses):
+    """Get the moments of inertia along the principal axes.
+
+    The three principal moments of inertia are computed from the
+    eigenvalues of the symmetric inertial tensor. Periodic boundary
+    conditions are ignored. Units of the moments of inertia are
+    amu*angstrom**2.
+    """
+    com = get_center_of_mass(masses, positions)
+    positions_ = positions - com  # translate center of mass to origin
+
+    # Initialize elements of the inertial tensor
+    I11 = I22 = I33 = I12 = I13 = I23 = 0.0
+    for i in range(len(positions_)):
+        x, y, z = positions_[i]
+        m = masses[i]
+
+        I11 += m * (y ** 2 + z ** 2)
+        I22 += m * (x ** 2 + z ** 2)
+        I33 += m * (x ** 2 + y ** 2)
+        I12 += -m * x * y
+        I13 += -m * x * z
+        I23 += -m * y * z
+
+    I = np.array([[I11, I12, I13],
+                  [I12, I22, I23],
+                  [I13, I23, I33]])
+
+    evals, evecs = np.linalg.eigh(I)
+
+    return evals
+

@@ -12,7 +12,7 @@ from xtb.ase.calculator import XTB
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
-from .utils import get_hash, hash_atoms, molfile2ase, smiles2ase
+from .utils import get_hash, hash_atoms, molfile2ase, smiles2ase, get_moments_of_inertia
 
 
 def ir_hash(atoms, method):
@@ -24,8 +24,8 @@ def run_xtb_ir(
 ) -> IRResult:
     # mol = deepcopy(atoms)
     this_hash = ir_hash(atoms, method)
-    moi = atoms.get_moments_of_inertia() 
-    linear = sum(moi> 0.01) == 2   
+    moi = atoms.get_moments_of_inertia()
+    linear = sum(moi > 0.01) == 2
     result = ir_cache.get(this_hash)
 
     if result is None:
@@ -45,10 +45,17 @@ def run_xtb_ir(
             bonds = get_bonds_from_mol(mol)
             for i, mode in enumerate(most_relevant_mode_for_bond_):
                 most_relevant_mode_for_bond.append(
-                    {"startAtom": bonds[i][0], "endAtom": bonds[i][1], "mode": int(mode), "displacement": bond_displacements[mode][i]}
+                    {
+                        "startAtom": bonds[i][0],
+                        "endAtom": bonds[i][1],
+                        "mode": int(mode),
+                        "displacement": bond_displacements[mode][i],
+                    }
                 )
-         
-        mode_info, has_imaginary = compile_modes_info(ir, linear, bond_displacements, bonds)
+
+        mode_info, has_imaginary = compile_modes_info(
+            ir, linear, bond_displacements, bonds
+        )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
@@ -58,7 +65,7 @@ def run_xtb_ir(
             mostRelevantModesOfAtoms=get_max_displacements(ir),
             mostRelevantModesOfBonds=most_relevant_mode_for_bond,
             isLinear=linear,
-            momentsOfInertia=[float(i) for i in moi]
+            momentsOfInertia=[float(i) for i in moi],
         )
         ir_cache.set(this_hash, result)
 
@@ -120,14 +127,14 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
     modes = []
     has_imaginary = False
     for n in range(3 * len(ir.indices)):
-        if n < 3: 
-            modeType = 'translation'
-        elif n < 5: 
-            modeType = 'rotation'
-        elif n == 5: 
-            if linear: 
+        if n < 3:
+            modeType = "translation"
+        elif n < 5:
+            modeType = "rotation"
+        elif n == 5:
+            if linear:
                 modeType = "vibration"
-            else: 
+            else:
                 modeType = "rotation"
         else:
             modeType = "vibration"
@@ -135,12 +142,13 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
         f, c = clean_frequency(frequencies, n)
         has_imaginary = True if c == "i" else False
         mostContributingBonds = None
-        if bond_displacements is not None: 
-            mostContributingBonds = select_most_contributing_bonds(bond_displacements[n,:])
+        if bond_displacements is not None:
+            mostContributingBonds = select_most_contributing_bonds(
+                bond_displacements[n, :]
+            )
             mostContributingBonds = [bonds[i] for i in mostContributingBonds]
             mode = ir.get_mode(n)
         modes.append(
-            
             {
                 "number": n,
                 "displacements": get_displacement_xyz_for_mode(
@@ -150,14 +158,18 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
                 "frequency": float(f),
                 "imaginary": True if c == "i" else False,
                 "mostDisplacedAtoms": [
-                    int(i) for i in np.argsort(np.linalg.norm(mode - mode.sum(axis=0), axis=1))
+                    int(i)
+                    for i in np.argsort(np.linalg.norm(mode - mode.sum(axis=0), axis=1))
                 ][::-1],
                 "mostContributingAtoms": [
                     int(i) for i in select_most_contributing_atoms(ir, n)
                 ],
                 "mostContributingBonds": mostContributingBonds,
                 "modeType": modeType,
-                "centerOfMassDisplacement": float(np.linalg.norm(ir.get_mode(n).sum(axis=0)))
+                "centerOfMassDisplacement": float(
+                    np.linalg.norm(ir.get_mode(n).sum(axis=0))
+                ),
+               # "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
             }
         )
 
@@ -228,7 +240,6 @@ def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
     )[0]
 
 
-
 def select_most_contributing_bonds(displacements, threshold: float = 0.4):
     relative_contribution = displacements / displacements.sum()
 
@@ -259,17 +270,27 @@ def get_displaced_positions(positions, mode):
 def get_bond_displacements(mol, atoms, mode):
     bonds = get_bonds_from_mol(mol)
     positions = atoms.positions
-    displaced_positions = get_displaced_positions(positions, mode)  - mode.sum(axis=0)
+    displaced_positions = get_displaced_positions(positions, mode) - mode.sum(axis=0)
     changes = []
 
     for bond in bonds:
-        get_bond_displacements =    np.linalg.norm(get_bond_vector(positions, bond)) - np.linalg.norm(get_bond_vector(displaced_positions, bond))
+        get_bond_displacements = np.linalg.norm(
+            get_bond_vector(positions, bond)
+        ) - np.linalg.norm(get_bond_vector(displaced_positions, bond))
 
-        changes.append(
-            np.linalg.norm(
-                get_bond_displacements
-            )
-        )
+        changes.append(np.linalg.norm(get_bond_displacements))
 
     return changes
+
+
+def get_change_in_moi(atoms, ir, mode_number):
+    return np.linalg.norm(
+        np.linalg.norm(
+            get_moments_of_inertia(
+                get_displaced_positions(atoms.positions, ir.get_mode(mode_number)),
+                atoms.get_masses(),
+            )
+        )
+        - np.linalg.norm(get_moments_of_inertia(atoms.positions, atoms.get_masses()))
+    )
 
