@@ -1,8 +1,7 @@
+# -*- coding: utf-8 -*-
 
-import io
-from contextlib import redirect_stderr, redirect_stdout
+
 from copy import deepcopy
-from functools import lru_cache
 
 from ase import Atoms
 from ase.optimize.lbfgs import LBFGS
@@ -16,8 +15,12 @@ from .utils import hash_atoms
 def opt_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)
 
+
 def run_xtb_opt(
-    atoms: Atoms, method: str="GFNFF", constrain_metals: bool = False, fmax: float = 0.00001
+    atoms: Atoms,
+    method: str = "GFNFF",
+    constrain_metals: bool = False,
+    fmax: float = 0.000005,
 ) -> OptimizationResult:
     this_hash = opt_hash(atoms, method)
     try:
@@ -27,7 +30,6 @@ def run_xtb_opt(
     if result is None:
         mol = deepcopy(atoms)
         mol.pbc = False
-        
 
         mol.calc = XTB(method=method)
         opt = LBFGS(mol, logfile=None)
@@ -35,6 +37,6 @@ def run_xtb_opt(
         forces = mol.get_forces()
         energy = mol.get_potential_energy()
         mol.calc = None
-        opt_cache.set(this_hash, result,  expire=None)
-        result =  OptimizationResult(atoms=mol, forces=forces, energy=energy)
+        opt_cache.set(this_hash, result, expire=None)
+        result = OptimizationResult(atoms=mol, forces=forces, energy=energy)
     return result

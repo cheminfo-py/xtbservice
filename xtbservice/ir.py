@@ -1,18 +1,20 @@
+# -*- coding: utf-8 -*-
 import io
 import shutil
-from contextlib import redirect_stdout
 from functools import lru_cache
-from rdkit import Chem
-from typing import Union, List
+from typing import List, Union
+
 import numpy as np
 from ase import Atoms
 from ase.vibrations import Infrared
+from rdkit import Chem
+from scipy import spatial
 from xtb.ase.calculator import XTB
 
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
-from .utils import get_hash, hash_atoms, molfile2ase, smiles2ase, get_moments_of_inertia
+from .utils import get_hash, get_moments_of_inertia, hash_atoms, molfile2ase, smiles2ase
 
 
 def ir_hash(atoms, method):
@@ -23,7 +25,7 @@ def run_xtb_ir(
     atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
 ) -> IRResult:
     # mol = deepcopy(atoms)
-    if mol is None: 
+    if mol is None:
         raise Exception
     this_hash = ir_hash(atoms, method)
     moi = atoms.get_moments_of_inertia()
@@ -60,9 +62,16 @@ def run_xtb_ir(
                         "displacement": bond_displacements[mode][i],
                     }
                 )
+        displacement_alignments = [
+            get_alignment(ir, n) for n in range(3 * len(ir.indices))
+        ]
 
         mode_info, has_imaginary = compile_modes_info(
-            ir, linear, bond_displacements, bonds
+            ir,
+            linear,
+            displacement_alignments,
+            bond_displacements,
+            bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -129,21 +138,27 @@ def clean_frequency(frequencies, n):
     return freq, c
 
 
-def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
+def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=None):
     frequencies = ir.get_frequencies()
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
+    sorted_alignments = sorted(alignments, reverse=True)
+    third_best_alignment = sorted_alignments[2]
     has_imaginary = False
     for n in range(3 * len(ir.indices)):
-        if n < 3:
-            modeType = "translation"
-        elif n < 5:
-            modeType = "rotation"
+        if n < 5:
+            if alignments[n] >= third_best_alignment:
+                modeType = "translation"
+            else:
+                modeType = "rotation"
         elif n == 5:
             if linear:
                 modeType = "vibration"
             else:
-                modeType = "rotation"
+                if alignments[n] >= third_best_alignment:
+                    modeType = "translation"
+                else:
+                    modeType = "rotation"
         else:
             modeType = "vibration"
 
@@ -156,6 +171,7 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
             )
             mostContributingBonds = [bonds[i] for i in mostContributingBonds]
             mode = ir.get_mode(n)
+
         modes.append(
             {
                 "number": n,
@@ -178,6 +194,7 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
                     np.linalg.norm(ir.get_mode(n).sum(axis=0))
                 ),
                 "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
+                "displacementAlignment": alignments[n],
             }
         )
 
@@ -204,6 +221,19 @@ def get_max_displacements(ir, linear):
     )
 
 
+def get_alignment(ir, mode_number):
+    dot_result = []
+
+    displacements = ir.get_mode(mode_number)
+
+    for i, displ_i in enumerate(displacements):
+        for j, displ_j in enumerate(displacements):
+            if i < j:
+                dot_result.append(1 - spatial.distance.cosine(displ_i, displ_j))
+
+    return np.mean(dot_result)
+
+
 def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     xyz_file = []
     xyz_file.append("%6d\n" % len(ir.atoms))
@@ -224,7 +254,15 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
+            % (
+                symbols[i],
+                pos[0],
+                pos[1],
+                pos[2],
+                mode[i, 0],
+                mode[i, 1],
+                mode[i, 2],
+            )
         )
 
     xyz_file_string = "".join(xyz_file)
@@ -244,7 +282,7 @@ def get_displacement_xyz_dict(ir):
 
 def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
     displacements = ir.get_mode(mode)
-   # displacements -= displacements[:3].mean(axis=0)
+    # displacements -= displacements[:3].mean(axis=0)
     relative_contribution = (
         np.linalg.norm(displacements, axis=1)
         / np.linalg.norm(displacements, axis=1).max()
@@ -253,8 +291,8 @@ def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
         relative_contribution
         > threshold * np.max(np.abs(np.diff(relative_contribution)))
     )[0]
-    print(res)
-    return  res
+
+    return res
 
 
 def select_most_contributing_bonds(displacements, threshold: float = 0.4):
@@ -310,4 +348,3 @@ def get_change_in_moi(atoms, ir, mode_number):
         )
         - np.linalg.norm(get_moments_of_inertia(atoms.positions, atoms.get_masses()))
     )
-

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 xtb-service.py
 webservice providing xtb calculations
@@ -8,9 +9,9 @@ from fastapi_versioning import VersionedFastAPI, version
 from starlette.middleware import Middleware
 
 from . import __version__
-from .ir import ir_from_molfile, ir_from_smiles
-from .models import IRRequest, IRResult, ConformerRequest, ConformerLibrary
 from .conformers import conformers_from_molfile, conformers_from_smiles
+from .ir import ir_from_molfile, ir_from_smiles
+from .models import ConformerLibrary, ConformerRequest, IRRequest, IRResult
 
 ALLOWED_HOSTS = ["*"]
 
@@ -19,7 +20,10 @@ app = FastAPI(
     title="XTB webservice",
     description="Offers xtb calculation tools. Allowed methods are `GFNFF`, `GFN2xTB`, `GFN1xTB`",
     version=__version__,
-    contact={"name": "Cheminfo", "email": "admin@cheminfo.org",},
+    contact={
+        "name": "Cheminfo",
+        "email": "admin@cheminfo.org",
+    },
     license_info={"name": "MIT"},
 )
 

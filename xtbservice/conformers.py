@@ -1,5 +1,7 @@
-from .conformer_generator import ConformerGenerator
+# -*- coding: utf-8 -*-
 from rdkit import Chem
+
+from .conformer_generator import ConformerGenerator
 from .models import Conformer, ConformerLibrary
 
 
@@ -36,6 +38,8 @@ def generate_conformers_from_mol(mol, forcefield, rmsd_threshold, max_conformers
     for i in range(mol.GetNumConformers()):
         conf = mol.GetConformer(i)
         energy = energies[i]
-        conformers.append(Conformer(molFile=Chem.MolToMolBlock(mol, confId=i), energy=energy))
+        conformers.append(
+            Conformer(molFile=Chem.MolToMolBlock(mol, confId=i), energy=energy)
+        )
 
     return ConformerLibrary(conformers=conformers)

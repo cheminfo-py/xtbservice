@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -38,7 +39,11 @@ class IRResult(BaseModel):
         None, description="True if there is any mode with imaginary frequency"
     )
     isLinear: bool = Field(None, description="True if the molecule is linear.")
-    momentsOfInertia: List[float] = Field(None, description="Moments of inertia around principal axes. For a linear molecule one only expects two non-zero components.")
+    momentsOfInertia: List[float] = Field(
+        None,
+        description="Moments of inertia around principal axes. For a linear molecule one only expects two non-zero components.",
+    )
+
 
 class IRRequest(BaseModel):
     smiles: Optional[str] = Field(
@@ -94,7 +99,10 @@ class Conformer(BaseModel):
         None,
         description="String with molfile.",
     )
-    energy: str = Field(None, description="Final energy after energy minimization.",)
+    energy: str = Field(
+        None,
+        description="Final energy after energy minimization.",
+    )
 
 
 class ConformerLibrary(BaseModel):

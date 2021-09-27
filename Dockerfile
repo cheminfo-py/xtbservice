@@ -3,7 +3,7 @@ FROM continuumio/miniconda3
 
 RUN conda install python=3.7 -y
 RUN conda install rdkit -c rdkit -y
-RUN conda install xtb-python -c conda-forge -y 
+RUN conda install xtb-python -c conda-forge -y
 
 COPY requirements.txt .
 

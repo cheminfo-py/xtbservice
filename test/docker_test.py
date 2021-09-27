@@ -4,7 +4,6 @@ import sys
 
 import requests
 
-
 r = requests.get("http://localhost:8091/v1/app_version/")
 keys = r.json().keys()
 if "app_version" in keys:

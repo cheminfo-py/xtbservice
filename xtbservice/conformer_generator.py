@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Conformer generation.
 """
@@ -46,11 +47,17 @@ class ConformerGenerator(object):
         minimization, increasing the size of the pool increases the chance
         of identifying max_conformers unique conformers.
     """
-    def __init__(self, max_conformers=1, rmsd_threshold=0.5, force_field='uff',
-                 pool_multiplier=10):
+
+    def __init__(
+        self,
+        max_conformers=1,
+        rmsd_threshold=0.5,
+        force_field="uff",
+        pool_multiplier=10,
+    ):
         self.max_conformers = max_conformers
         if rmsd_threshold is None or rmsd_threshold < 0:
-            rmsd_threshold = -1.
+            rmsd_threshold = -1.0
         self.rmsd_threshold = rmsd_threshold
         self.force_field = force_field
         self.pool_multiplier = pool_multiplier
@@ -77,18 +84,18 @@ class ConformerGenerator(object):
         ----------
         mol : RDKit Mol
             Molecule.
-        energies: A list of minimized conformer energies. 
+        energies: A list of minimized conformer energies.
         """
 
         # initial embedding
         mol = self.embed_molecule(mol)
         if not mol.GetNumConformers():
-            msg = 'No conformers generated for molecule'
-            if mol.HasProp('_Name'):
-                name = mol.GetProp('_Name')
+            msg = "No conformers generated for molecule"
+            if mol.HasProp("_Name"):
+                name = mol.GetProp("_Name")
                 msg += ' "{}".'.format(name)
             else:
-                msg += '.'
+                msg += "."
             raise RuntimeError(msg)
 
         # minimization and pruning
@@ -111,8 +118,7 @@ class ConformerGenerator(object):
         param = rdDistGeom.ETKDGv3()
         param.pruneRmsThresh = 1
 
-
-        AllChem.EmbedMultipleConfs(mol, numConfs=n_confs, params =param)
+        AllChem.EmbedMultipleConfs(mol, numConfs=n_confs, params=param)
         return mol
 
     def get_molecule_force_field(self, mol, conf_id=None, **kwargs):
@@ -128,18 +134,18 @@ class ConformerGenerator(object):
         kwargs : dict, optional
             Keyword arguments for force field constructor.
         """
-        if self.force_field == 'uff':
-            ff = AllChem.UFFGetMoleculeForceField(
-                mol, confId=conf_id, **kwargs)
-        elif self.force_field.startswith('mmff'):
+        if self.force_field == "uff":
+            ff = AllChem.UFFGetMoleculeForceField(mol, confId=conf_id, **kwargs)
+        elif self.force_field.startswith("mmff"):
             AllChem.MMFFSanitizeMolecule(mol)
             mmff_props = AllChem.MMFFGetMoleculeProperties(
-                mol, mmffVariant=self.force_field)
+                mol, mmffVariant=self.force_field
+            )
             ff = AllChem.MMFFGetMoleculeForceField(
-                mol, mmff_props, confId=conf_id, **kwargs)
+                mol, mmff_props, confId=conf_id, **kwargs
+            )
         else:
-            raise ValueError("Invalid force_field " +
-                             "'{}'.".format(self.force_field))
+            raise ValueError("Invalid force_field " + "'{}'.".format(self.force_field))
         return ff
 
     def minimize_conformers(self, mol):
@@ -191,14 +197,13 @@ class ConformerGenerator(object):
         -------
         mol: A new RDKit Mol containing the chosen conformers, sorted by
             increasing energy.
-        energies: A list of minimized conformer energies. 
+        energies: A list of minimized conformer energies.
         """
         energies = self.get_conformer_energies(mol)
         rmsd = self.get_conformer_rmsd(mol)
 
         if self.rmsd_threshold < 0 or mol.GetNumConformers() <= 1:
             return mol, energies
-       
 
         sort = np.argsort(energies)  # sort by increasing energy
         keep = []  # always keep lowest-energy conformer
@@ -247,13 +252,13 @@ class ConformerGenerator(object):
         mol : RDKit Mol
             Molecule.
         """
-        rmsd = np.zeros((mol.GetNumConformers(), mol.GetNumConformers()),
-                        dtype=float)
+        rmsd = np.zeros((mol.GetNumConformers(), mol.GetNumConformers()), dtype=float)
         for i, ref_conf in enumerate(mol.GetConformers()):
             for j, fit_conf in enumerate(mol.GetConformers()):
                 if i >= j:
                     continue
-                rmsd[i, j] = AllChem.GetBestRMS(mol, mol, ref_conf.GetId(),
-                                                fit_conf.GetId())
+                rmsd[i, j] = AllChem.GetBestRMS(
+                    mol, mol, ref_conf.GetId(), fit_conf.GetId()
+                )
                 rmsd[j, i] = rmsd[i, j]
         return rmsd

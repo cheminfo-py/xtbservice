@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 import hashlib
 
+import numpy as np
 from ase import Atoms
 from rdkit import Chem
-import numpy as np 
-from functools import lru_cache
+
 from .cache import conformer_cache
 from .conformers import embed_conformer
 
@@ -28,9 +29,10 @@ def molfile2ase(molfile: str) -> Atoms:
         mol = Chem.MolFromMolBlock(molfile, sanitize=True, removeHs=False)
         mol.UpdatePropertyCache(strict=False)
         mol = embed_conformer(mol)
-        result =  rdkit2ase(mol), mol
-        conformer_cache.set(molfile, result,  expire=None)
+        result = rdkit2ase(mol), mol
+        conformer_cache.set(molfile, result, expire=None)
     return result
+
 
 def smiles2ase(smiles: str) -> Atoms:
     try:
@@ -42,24 +44,25 @@ def smiles2ase(smiles: str) -> Atoms:
         mol = Chem.MolFromSmiles(smiles)
         refmol = Chem.AddHs(Chem.Mol(mol))
         refmol = embed_conformer(refmol)
-        result =  rdkit2ase(refmol), refmol
-        conformer_cache.set(smiles, result,  expire=None)
+        result = rdkit2ase(refmol), refmol
+        conformer_cache.set(smiles, result, expire=None)
     return result
 
 
-
-def hash_atoms(atoms: Atoms) -> str: 
+def hash_atoms(atoms: Atoms) -> str:
     symbols = str(atoms.symbols)
-    positions = str(atoms.positions) 
+    positions = str(atoms.positions)
 
     return hash(symbols + positions)
 
 
-def get_hash(string): 
+def get_hash(string):
     return hashlib.md5(string.encode("utf-8")).hexdigest()
+
 
 def get_center_of_mass(masses, positions):
     return masses @ positions / masses.sum()
+
 
 def get_moments_of_inertia(positions, masses):
     """Get the moments of inertia along the principal axes.
@@ -85,11 +88,8 @@ def get_moments_of_inertia(positions, masses):
         I13 += -m * x * z
         I23 += -m * y * z
 
-    I = np.array([[I11, I12, I13],
-                  [I12, I22, I23],
-                  [I13, I23, I33]])
+    I = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
 
     evals, evecs = np.linalg.eigh(I)
 
     return evals
-
