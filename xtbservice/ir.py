@@ -23,6 +23,9 @@ def run_xtb_ir(
     atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
 ) -> IRResult:
     # mol = deepcopy(atoms)
+    print(mol)
+    if mol is None: 
+        raise Exception
     this_hash = ir_hash(atoms, method)
     moi = atoms.get_moments_of_inertia()
     linear = sum(moi > 0.01) == 2
@@ -87,6 +90,7 @@ def ir_from_smiles(smiles, method):
 
     if result is None:
         atoms, mol = smiles2ase(smiles)
+        print(mol)
         opt_result = run_xtb_opt(atoms, method=method)
         result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
         ir_from_smiles_cache.set(myhash, result, expire=None)
@@ -195,7 +199,10 @@ def get_max_displacements(ir, linear):
         mode_abs_displacements[:6, :] = 0
 
     return dict(
-        zip(ir.indices, [list(a)[::-1] for a in mode_abs_displacements.argsort(axis=0).T])
+        zip(
+            ir.indices,
+            [list(a)[::-1] for a in mode_abs_displacements.argsort(axis=0).T],
+        )
     )
 
 
@@ -240,10 +247,12 @@ def get_displacement_xyz_dict(ir):
 def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
     displacements = ir.get_mode(mode)
     displacements -= displacements.sum(axis=0)
+    print(displacements)
     relative_contribution = (
         np.linalg.norm(displacements, axis=1)
         / np.linalg.norm(displacements, axis=1).sum()
     )
+    print(relative_contribution)
 
     return np.where(
         relative_contribution
