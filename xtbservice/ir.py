@@ -23,7 +23,6 @@ def run_xtb_ir(
     atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
 ) -> IRResult:
     # mol = deepcopy(atoms)
-    print(mol)
     if mol is None: 
         raise Exception
     this_hash = ir_hash(atoms, method)
@@ -90,7 +89,6 @@ def ir_from_smiles(smiles, method):
 
     if result is None:
         atoms, mol = smiles2ase(smiles)
-        print(mol)
         opt_result = run_xtb_opt(atoms, method=method)
         result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
         ir_from_smiles_cache.set(myhash, result, expire=None)
@@ -176,10 +174,10 @@ def compile_modes_info(ir, linear, bond_displacements=None, bonds=None):
                 ],
                 "mostContributingBonds": mostContributingBonds,
                 "modeType": modeType,
-                # "centerOfMassDisplacement": float(
-                #     np.linalg.norm(ir.get_mode(n).sum(axis=0))
-                # ),
-                # "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
+                "centerOfMassDisplacement": float(
+                    np.linalg.norm(ir.get_mode(n).sum(axis=0))
+                ),
+                "totalChangeOfMomentOfInteria": get_change_in_moi(ir.atoms, ir, n),
             }
         )
 
@@ -246,18 +244,17 @@ def get_displacement_xyz_dict(ir):
 
 def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
     displacements = ir.get_mode(mode)
-    displacements -= displacements.sum(axis=0)
-    print(displacements)
+   # displacements -= displacements[:3].mean(axis=0)
     relative_contribution = (
         np.linalg.norm(displacements, axis=1)
-        / np.linalg.norm(displacements, axis=1).sum()
+        / np.linalg.norm(displacements, axis=1).max()
     )
-    print(relative_contribution)
-
-    return np.where(
+    res = np.where(
         relative_contribution
         > threshold * np.max(np.abs(np.diff(relative_contribution)))
     )[0]
+    print(res)
+    return  res
 
 
 def select_most_contributing_bonds(displacements, threshold: float = 0.4):
