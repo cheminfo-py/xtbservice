@@ -10,6 +10,7 @@ from .conformers import embed_conformer
 from .errors import TooLargeError
 from .settings import MAX_ATOMS
 
+
 def rdkit2ase(mol):
     pos = mol.GetConformer().GetPositions()
     natoms = mol.GetNumAtoms()
@@ -30,8 +31,10 @@ def molfile2ase(molfile: str) -> Atoms:
         mol = Chem.MolFromMolBlock(molfile, sanitize=True, removeHs=False)
         mol.UpdatePropertyCache(strict=False)
         natoms = mol.GetNumAtoms()
-        if len(natoms) > MAX_ATOMS: 
-            raise TooLargeError(f'Molecule can have maximal {MAX_ATOMS} atoms for this service')
+        if natoms > MAX_ATOMS:
+            raise TooLargeError(
+                f"Molecule can have maximal {MAX_ATOMS} atoms for this service"
+            )
         mol = embed_conformer(mol)
         result = rdkit2ase(mol), mol
         conformer_cache.set(molfile, result, expire=None)
@@ -47,8 +50,10 @@ def smiles2ase(smiles: str) -> Atoms:
     if result is None:
         mol = Chem.MolFromSmiles(smiles)
         natoms = mol.GetNumAtoms()
-        if len(natoms) > MAX_ATOMS: 
-            raise TooLargeError(f'Molecule can have maximal {MAX_ATOMS} atoms for this service')
+        if natoms > MAX_ATOMS:
+            raise TooLargeError(
+                f"Molecule can have maximal {MAX_ATOMS} atoms for this service"
+            )
         refmol = Chem.AddHs(Chem.Mol(mol))
         refmol = embed_conformer(refmol)
         result = rdkit2ase(refmol), refmol

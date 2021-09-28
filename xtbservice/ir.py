@@ -5,6 +5,7 @@ from functools import lru_cache
 from typing import List, Union
 
 import numpy as np
+import wrapt_timeout_decorator
 from ase import Atoms
 from ase.vibrations import Infrared
 from rdkit import Chem
@@ -14,9 +15,9 @@ from xtb.ase.calculator import XTB
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
+from .settings import IMAGINARY_FREQ_THRESHOLD, TIMEOUT
 from .utils import get_hash, get_moments_of_inertia, hash_atoms, molfile2ase, smiles2ase
-import wrapt_timeout_decorator
-from .settings import TIMEOUT, IMAGINARY_FREQ_THRESHOLD
+
 
 def ir_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)
@@ -84,13 +85,14 @@ def run_xtb_ir(
             mostRelevantModesOfBonds=most_relevant_mode_for_bond,
             isLinear=linear,
             momentsOfInertia=[float(i) for i in moi],
-            hasLargeImaginaryFrequency=has_large_imaginary
+            hasLargeImaginaryFrequency=has_large_imaginary,
         )
         ir_cache.set(this_hash, result)
 
         shutil.rmtree(ir.cache.directory)
         ir.clean()
     return result
+
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_smiles(smiles, method):
@@ -104,6 +106,7 @@ def ir_from_smiles(smiles, method):
         result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
         ir_from_smiles_cache.set(myhash, result, expire=None)
     return result
+
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_molfile(molfile, method):
@@ -166,7 +169,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
             modeType = "vibration"
 
         f, c = clean_frequency(frequencies, n)
-        if c == "i" :
+        if c == "i":
             has_imaginary = True
             if f > IMAGINARY_FREQ_THRESHOLD:
                 has_large_imaginary = True
