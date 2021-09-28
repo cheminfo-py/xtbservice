@@ -43,6 +43,7 @@ class IRResult(BaseModel):
         None,
         description="Moments of inertia around principal axes. For a linear molecule one only expects two non-zero components.",
     )
+    hasLargeImaginaryFrequency: bool = Field(None, description="True if there is a large imaginary frequency, indicating a failed geometry optimization.")
 
 
 class IRRequest(BaseModel):

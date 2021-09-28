@@ -8,11 +8,25 @@ from xtbservice import __version__, app
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 client = TestClient(app)
 
-from xtbservice.cache import ir_from_molfile_cache, ir_from_smiles_cache, opt_cache,  ir_cache, conformer_cache
+from xtbservice.cache import (
+    conformer_cache,
+    ir_cache,
+    ir_from_molfile_cache,
+    ir_from_smiles_cache,
+    opt_cache,
+)
 
-def clear_caches(): 
-    for cache in [ir_from_smiles_cache, ir_from_molfile_cache, opt_cache, ir_cache, conformer_cache]: 
+
+def clear_caches():
+    for cache in [
+        ir_from_smiles_cache,
+        ir_from_molfile_cache,
+        opt_cache,
+        ir_cache,
+        conformer_cache,
+    ]:
         cache.clear()
+
 
 def test_from_smiles():
     clear_caches()

@@ -6,3 +6,4 @@ uvloop==0.15
 ase
 diskcache
 fastapi_versioning
+timeout_decorator

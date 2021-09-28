@@ -15,7 +15,8 @@ from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
 from .utils import get_hash, get_moments_of_inertia, hash_atoms, molfile2ase, smiles2ase
-
+import wrapt_timeout_decorator
+from .settings import TIMEOUT, IMAGINARY_FREQ_THRESHOLD
 
 def ir_hash(atoms, method):
     return hash(str(hash_atoms(atoms)) + method)
@@ -66,7 +67,7 @@ def run_xtb_ir(
             get_alignment(ir, n) for n in range(3 * len(ir.indices))
         ]
 
-        mode_info, has_imaginary = compile_modes_info(
+        mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
             ir,
             linear,
             displacement_alignments,
@@ -83,6 +84,7 @@ def run_xtb_ir(
             mostRelevantModesOfBonds=most_relevant_mode_for_bond,
             isLinear=linear,
             momentsOfInertia=[float(i) for i in moi],
+            hasLargeImaginaryFrequency=has_large_imaginary
         )
         ir_cache.set(this_hash, result)
 
@@ -90,7 +92,7 @@ def run_xtb_ir(
         ir.clean()
     return result
 
-
+@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_smiles(smiles, method):
     myhash = str(get_hash(smiles + method))
 
@@ -103,7 +105,7 @@ def ir_from_smiles(smiles, method):
         ir_from_smiles_cache.set(myhash, result, expire=None)
     return result
 
-
+@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_molfile(molfile, method):
     myhash = str(get_hash(molfile + method))
 
@@ -145,6 +147,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
     sorted_alignments = sorted(alignments, reverse=True)
     third_best_alignment = sorted_alignments[2]
     has_imaginary = False
+    has_large_imaginary = False
     for n in range(3 * len(ir.indices)):
         if n < 5:
             if alignments[n] >= third_best_alignment:
@@ -163,7 +166,10 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
             modeType = "vibration"
 
         f, c = clean_frequency(frequencies, n)
-        has_imaginary = True if c == "i" else False
+        if c == "i" :
+            has_imaginary = True
+            if f > IMAGINARY_FREQ_THRESHOLD:
+                has_large_imaginary = True
         mostContributingBonds = None
         if bond_displacements is not None:
             mostContributingBonds = select_most_contributing_bonds(
@@ -198,7 +204,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
             }
         )
 
-    return modes, has_imaginary
+    return modes, has_imaginary, has_large_imaginary
 
 
 def get_max_displacements(ir, linear):
