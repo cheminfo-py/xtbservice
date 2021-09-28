@@ -188,7 +188,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
                     ir, frequencies, symbols, n
                 ),
                 "intensity": float(ir.intensities[n]),
-                "frequency": float(f),
+                "wavenumber": float(f),
                 "imaginary": True if c == "i" else False,
                 "mostDisplacedAtoms": [
                     int(i)
