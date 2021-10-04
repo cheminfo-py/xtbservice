@@ -6,5 +6,8 @@ services:
     restart: always
     environment:
       - PORT=${PORT}
+      - CACHEDIR=/ircache
     ports:
       - ${PORT}:${PORT}
+    volumes:
+      - ./ircache:/ircache

@@ -97,7 +97,6 @@ def run_xtb_ir(
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_smiles(smiles, method):
     myhash = str(get_hash(smiles + method))
-
     result = ir_from_smiles_cache.get(myhash)
 
     if result is None:
