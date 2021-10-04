@@ -147,15 +147,20 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
     sorted_alignments = sorted(alignments, reverse=True)
+    mapping = dict(zip(np.arange(len(frequencies)), np.argsort(frequencies)))
     third_best_alignment = sorted_alignments[2]
     has_imaginary = False
     has_large_imaginary = False
     for n in range(3 * len(ir.indices)):
-        if n < 5:
-            if alignments[n] >= third_best_alignment:
-                modeType = "translation"
-            else:
-                modeType = "rotation"
+        n = int(mapping[n])
+        if n < 3:
+            # print("below 5", alignments[n])
+            # if alignments[n] >= third_best_alignment:
+            modeType = "translation"
+            # else:
+            #     modeType = "rotation"
+        elif n < 5:
+            modeType = "rotation"
         elif n == 5:
             if linear:
                 modeType = "vibration"
@@ -237,7 +242,7 @@ def get_alignment(ir, mode_number):
     for i, displ_i in enumerate(displacements):
         for j, displ_j in enumerate(displacements):
             if i < j:
-                dot_result.append(1 - spatial.distance.cosine(displ_i, displ_j))
+                dot_result.append(spatial.distance.cosine(displ_i, displ_j))
 
     return np.mean(dot_result)
 
@@ -337,11 +342,11 @@ def get_bond_displacements(mol, atoms, mode):
     changes = []
 
     for bond in bonds:
-        get_bond_displacements = np.linalg.norm(
+        bond_displacements = np.linalg.norm(
             get_bond_vector(positions, bond)
         ) - np.linalg.norm(get_bond_vector(displaced_positions, bond))
 
-        changes.append(np.linalg.norm(get_bond_displacements))
+        changes.append(np.linalg.norm(bond_displacements))
 
     return changes
 

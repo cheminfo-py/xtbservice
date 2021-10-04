@@ -59,3 +59,38 @@ def test_most_contributing_atoms_bonds():
     assert 2 in d["modes"][35]["mostContributingAtoms"]
     assert 8 in d["modes"][35]["mostContributingAtoms"]
     assert len(d["modes"][35]["mostContributingAtoms"]) == 3
+
+
+def collect_node_types(d):
+    counts = {"translation": 0, "rotation": 0, "vibration": 0}
+
+    for n in range(len(d["modes"])):
+        mode_type = d["modes"][n]["modeType"]
+
+        if mode_type == "translation":
+            counts["translation"] += 1
+        elif mode_type == "rotation":
+            counts["rotation"] += 1
+        elif mode_type == "vibration":
+            counts["vibration"] += 1
+
+    return counts
+
+
+def test_mode_type_assignent():
+    # original bug report on dimethylacetamide
+    # clear_caches()
+    # response = client.get("/v1/ir?smiles=CC(N(C)C)=O")
+    # d = response.json()
+    # co2_mode_types = collect_node_types(d)
+    # print(co2_mode_types)
+    # assert co2_mode_types["translation"] == 3
+    # assert co2_mode_types["rotation"] == 2
+
+    # linear molecule
+    clear_caches()
+    response = client.get("/v1/ir?smiles=O=C=O")
+    d = response.json()
+    co2_mode_types = collect_node_types(d)
+    assert co2_mode_types["translation"] == 3
+    assert co2_mode_types["rotation"] == 2
