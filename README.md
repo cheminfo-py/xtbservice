@@ -6,7 +6,7 @@ This is a webservice built using [FastAPI](https://github.com/tiangolo/fastapi).
 
 Allows to:
 - Simulate IR spectra given a SMILES string
-- Get 
+- Get conformers
 
 ## Usage
 
