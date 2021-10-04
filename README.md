@@ -50,8 +50,7 @@ This webservices heavily relies on [xtb](https://github.com/grimme-lab/xtb#citat
 
 It also uses RDKit and the conformer search proposed by Riniker/Landrum:
 -  RDKit: Open-source cheminformatics; http://www.rdkit.org
--  S. Riniker and G. A. Landrum _J. Chem. Inf. Model._ **2015**, 55, 12, 2562–257 DOI: [10.1021/acs.jcim.5b00654](https://doi.org/10.1021/acs.jcim.5
--  b00654)
+-  S. Riniker and G. A. Landrum _J. Chem. Inf. Model._ **2015**, 55, 12, 2562–257 DOI: [10.1021/acs.jcim.5b00654](https://doi.org/10.1021/acs.jcim.5b00654)
 ## Docs
 
 You find docs on `http://127.0.0.1:$PORT/v1/docs.`
