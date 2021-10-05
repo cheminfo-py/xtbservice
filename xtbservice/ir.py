@@ -67,11 +67,7 @@ def run_xtb_ir(
         ]
 
         mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
-            ir,
-            linear,
-            displacement_alignments,
-            bond_displacements,
-            bonds,
+            ir, linear, displacement_alignments, bond_displacements, bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -93,29 +89,38 @@ def run_xtb_ir(
 
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+def calculate_from_smiles(smiles, method, myhash):
+    atoms, mol = smiles2ase(smiles)
+    opt_result = run_xtb_opt(atoms, method=method)
+    result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
+    ir_from_smiles_cache.set(myhash, result, expire=None)
+    return result
+
+
 def ir_from_smiles(smiles, method):
     myhash = get_hash(smiles + method)
     result = ir_from_smiles_cache.get(myhash)
-
     if result is None:
-        atoms, mol = smiles2ase(smiles)
-        opt_result = run_xtb_opt(atoms, method=method)
-        result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
-        ir_from_smiles_cache.set(myhash, result, expire=None)
+        result = calculate_from_smiles(smiles, method, myhash)
     return result
 
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+def calculate_from_molfile(molfile, method, myhash):
+    atoms, mol = molfile2ase(molfile)
+    opt_result = run_xtb_opt(atoms, method=method)
+    result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
+    ir_from_molfile_cache.set(myhash, result, expire=None)
+    return result
+
+
 def ir_from_molfile(molfile, method):
     myhash = get_hash(molfile + method)
 
     result = ir_from_molfile_cache.get(myhash)
 
     if result is None:
-        atoms, mol = molfile2ase(molfile)
-        opt_result = run_xtb_opt(atoms, method=method)
-        result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
-        ir_from_molfile_cache.set(myhash, result, expire=None)
+        result = calculate_from_molfile(molfile, method, myhash)
     return result
 
 
@@ -265,15 +270,7 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (
-                symbols[i],
-                pos[0],
-                pos[1],
-                pos[2],
-                mode[i, 0],
-                mode[i, 1],
-                mode[i, 2],
-            )
+            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
         )
 
     xyz_file_string = "".join(xyz_file)
