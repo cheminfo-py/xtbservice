@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI, version
 from starlette.middleware import Middleware
+
 from . import __version__
 from .conformers import conformers_from_molfile, conformers_from_smiles
 from .errors import TooLargeError
@@ -53,7 +54,7 @@ def post_get_ir_spectrum(irrequest: IRRequest):
             status_code=422,
             detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
         )
-    except TimeoutError: 
+    except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return ir
 
@@ -86,7 +87,7 @@ def post_conformers(conformerrequest: ConformerRequest):
             status_code=422,
             detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
         )
-    except TimeoutError: 
+    except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return conformers
 
@@ -101,7 +102,7 @@ def get_ir_spectrum(smiles: str, method: str = "GFNFF"):
             status_code=422,
             detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
         )
-    except TimeoutError: 
+    except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return ir
 

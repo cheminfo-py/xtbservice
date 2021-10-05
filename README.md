@@ -30,11 +30,11 @@ You have the option to customize the behavior of the app using environment varia
 - `IMAGINARY_FREQ_THRESHOLD`: sets the maximum energy in cm-1 for imaginary frequency (if this threshold is exceeded, the output will contain a warning)
 - `MAX_ATOMS`: if the input contains more than this number of atoms, an error is thrown
 - `TIMEOUT`: If the request takes longer than this time (in seconds) a `TimeOut` error is raised
-- `CACHEDIR`: Sets the directory for the diskcache. It will be mounted by the docker container. 
+- `CACHEDIR`: Sets the directory for the diskcache. It will be mounted by the docker container.
 
-## Acknowledgments 
+## Acknowledgments
 
-This webservices heavily relies on [xtb](https://github.com/grimme-lab/xtb#citations) and ase. If you find this service useful and mention it in a publication, please also cite ase and xtb: 
+This webservices heavily relies on [xtb](https://github.com/grimme-lab/xtb#citations) and ase. If you find this service useful and mention it in a publication, please also cite ase and xtb:
 - [Ask Hjorth Larsen et al  _J. Phys.: Condens. Matter_  **2017**, 29, 273002](https://iopscience.iop.org/article/10.1088/1361-648X/aa680e/meta)
 - C. Bannwarth, E. Caldeweyher, S. Ehlert, A. Hansen, P. Pracht, J. Seibert, S. Spicher, S. Grimme
   *WIREs Comput. Mol. Sci.*, **2020**, 11, e01493.
