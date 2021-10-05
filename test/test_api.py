@@ -79,13 +79,12 @@ def collect_node_types(d):
 
 def test_mode_type_assignent():
     # original bug report on dimethylacetamide
-    # clear_caches()
-    # response = client.get("/v1/ir?smiles=CC(N(C)C)=O")
-    # d = response.json()
-    # co2_mode_types = collect_node_types(d)
-    # print(co2_mode_types)
-    # assert co2_mode_types["translation"] == 3
-    # assert co2_mode_types["rotation"] == 2
+    clear_caches()
+    response = client.get("/v1/ir?smiles=CC(N(C)C)=O")
+    d = response.json()
+    mode_types = collect_node_types(d)
+    assert mode_types["translation"] == 3
+    assert mode_types["rotation"] == 3
 
     # linear molecule
     clear_caches()
@@ -94,3 +93,11 @@ def test_mode_type_assignent():
     co2_mode_types = collect_node_types(d)
     assert co2_mode_types["translation"] == 3
     assert co2_mode_types["rotation"] == 2
+
+    # water molecule
+    clear_caches()
+    response = client.get("/v1/ir?smiles=O")
+    d = response.json()
+    water_mode_types = collect_node_types(d)
+    assert water_mode_types["translation"] == 3
+    assert water_mode_types["rotation"] == 3
