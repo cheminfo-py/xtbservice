@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import io
 import shutil
 from functools import lru_cache
 from typing import List, Union
@@ -26,7 +25,6 @@ def ir_hash(atoms, method):
 def run_xtb_ir(
     atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
 ) -> IRResult:
-    # mol = deepcopy(atoms)
     if mol is None:
         raise Exception
     this_hash = ir_hash(atoms, method)
@@ -96,7 +94,7 @@ def run_xtb_ir(
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_smiles(smiles, method):
-    myhash = str(get_hash(smiles + method))
+    myhash = get_hash(smiles + method)
     result = ir_from_smiles_cache.get(myhash)
 
     if result is None:
@@ -109,7 +107,7 @@ def ir_from_smiles(smiles, method):
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def ir_from_molfile(molfile, method):
-    myhash = str(get_hash(molfile + method))
+    myhash = get_hash(molfile + method)
 
     result = ir_from_molfile_cache.get(myhash)
 

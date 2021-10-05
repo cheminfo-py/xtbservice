@@ -11,3 +11,5 @@ services:
       - ${PORT}:${PORT}
     volumes:
       - ./ircache:/ircache
+    security_opt:
+      - seccomp:unconfined
