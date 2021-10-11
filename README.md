@@ -1,7 +1,5 @@
 # xtb-service
 
-![Docker Image Build and Test CI](https://github.com/cheminfo-py/xtb-service/workflows/Docker%20Image%20Build%20CI/badge.svg)
-
 This is a webservice built using [FastAPI](https://github.com/tiangolo/fastapi).
 
 Allows to:
