@@ -7,6 +7,8 @@ services:
     environment:
       - PORT=${PORT}
       - CACHEDIR=/ircache
+      - WORKERS=${WORKERS}
+      - OMP_NUM_THREADS=${OMP_NUM_THREADS}
     ports:
       - ${PORT}:${PORT}
     volumes:
