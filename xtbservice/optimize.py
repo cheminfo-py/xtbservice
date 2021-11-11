@@ -21,6 +21,7 @@ def run_xtb_opt(
     method: str = "GFNFF",
     constrain_metals: bool = False,
     fmax: float = 0.000005,
+    maxiter: int = 100,
 ) -> OptimizationResult:
     this_hash = opt_hash(atoms, method)
     try:
@@ -33,7 +34,7 @@ def run_xtb_opt(
 
         mol.calc = XTB(method=method)
         opt = LBFGS(mol, logfile=None)
-        opt.run(fmax=fmax)
+        opt.run(fmax=fmax, steps=maxiter)
         forces = mol.get_forces()
         energy = mol.get_potential_energy()
         mol.calc = None

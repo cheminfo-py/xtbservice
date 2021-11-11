@@ -27,6 +27,7 @@ def run_xtb_ir(
 ) -> IRResult:
     if mol is None:
         raise Exception
+    
     this_hash = ir_hash(atoms, method)
     moi = atoms.get_moments_of_inertia()
     linear = sum(moi > 0.01) == 2
