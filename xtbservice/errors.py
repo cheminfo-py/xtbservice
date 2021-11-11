@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class XTBServiceException(Exception):
+class XTBServiceException(ValueError):
     pass
 
 

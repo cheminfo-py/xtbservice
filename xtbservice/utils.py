@@ -61,7 +61,7 @@ def smiles2ase(smiles: str) -> Atoms:
     return result
 
 
-def hash_atoms(atoms: Atoms) -> str:
+def hash_atoms(atoms: Atoms) -> int:
     symbols = str(atoms.symbols)
     positions = str(atoms.positions)
 

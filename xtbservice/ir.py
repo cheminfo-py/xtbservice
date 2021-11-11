@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import shutil
 from functools import lru_cache
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 import wrapt_timeout_decorator
@@ -67,11 +67,7 @@ def run_xtb_ir(
         ]
 
         mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
-            ir,
-            linear,
-            displacement_alignments,
-            bond_displacements,
-            bonds,
+            ir, linear, displacement_alignments, bond_displacements, bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -274,15 +270,7 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (
-                symbols[i],
-                pos[0],
-                pos[1],
-                pos[2],
-                mode[i, 0],
-                mode[i, 1],
-                mode[i, 2],
-            )
+            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
         )
 
     xyz_file_string = "".join(xyz_file)
@@ -325,7 +313,7 @@ def select_most_contributing_bonds(displacements, threshold: float = 0.4):
 
 
 @lru_cache()
-def get_bonds_from_mol(mol) -> List[tuple]:
+def get_bonds_from_mol(mol) -> List[Tuple[int, int]]:
     all_bonds = []
     for i in range(mol.GetNumBonds()):
         bond = mol.GetBondWithIdx(i)

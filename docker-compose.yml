@@ -9,6 +9,7 @@ services:
       - CACHEDIR=/ircache
       - WORKERS=${WORKERS}
       - OMP_NUM_THREADS=${OMP_NUM_THREADS}
+      - MAX_ATOMS=50
     ports:
       - ${PORT}:${PORT}
     volumes:
