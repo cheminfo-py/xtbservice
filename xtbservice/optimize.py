@@ -5,6 +5,7 @@ from copy import deepcopy
 
 from ase import Atoms
 from ase.optimize.lbfgs import LBFGS
+from fastapi.logger import logger
 from xtb.ase.calculator import XTB
 
 from .cache import opt_cache
@@ -24,11 +25,13 @@ def run_xtb_opt(
     maxiter: int = 100,
 ) -> OptimizationResult:
     this_hash = opt_hash(atoms, method)
+    logger.debug(f"Running optimization with hash {this_hash}")
     try:
         result = opt_cache.get(this_hash)
     except KeyError:
         pass
     if result is None:
+        logger.debug(f"Optimization not found in cache, running")
         mol = deepcopy(atoms)
         mol.pbc = False
 

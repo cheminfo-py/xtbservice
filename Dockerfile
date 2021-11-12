@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY README.md .
 
-CMD gunicorn -w $WORKERS xtbservice.xtbservice:app -b 0.0.0.0:$PORT -k uvicorn.workers.UvicornWorker
+CMD gunicorn -w $WORKERS xtbservice.xtbservice:app -b 0.0.0.0:$PORT -k uvicorn.workers.UvicornWorker -t $TIMEOUT --keep-alive $TIMEOUT

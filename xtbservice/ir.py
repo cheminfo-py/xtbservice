@@ -7,6 +7,7 @@ import numpy as np
 import wrapt_timeout_decorator
 from ase import Atoms
 from ase.vibrations import Infrared
+from fastapi.logger import logger
 from rdkit import Chem
 from scipy import spatial
 from xtb.ase.calculator import XTB
@@ -27,13 +28,15 @@ def run_xtb_ir(
 ) -> IRResult:
     if mol is None:
         raise Exception
-    
+
     this_hash = ir_hash(atoms, method)
+    logger.debug(f"Running IR for {this_hash}")
     moi = atoms.get_moments_of_inertia()
     linear = sum(moi > 0.01) == 2
     result = ir_cache.get(this_hash)
 
     if result is None:
+        logger.debug(f"IR not in cache for {this_hash}, running")
         atoms.pbc = False
         atoms.calc = XTB(method=method)
 
@@ -68,7 +71,11 @@ def run_xtb_ir(
         ]
 
         mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
-            ir, linear, displacement_alignments, bond_displacements, bonds,
+            ir,
+            linear,
+            displacement_alignments,
+            bond_displacements,
+            bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -271,7 +278,15 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
+            % (
+                symbols[i],
+                pos[0],
+                pos[1],
+                pos[2],
+                mode[i, 0],
+                mode[i, 1],
+                mode[i, 2],
+            )
         )
 
     xyz_file_string = "".join(xyz_file)

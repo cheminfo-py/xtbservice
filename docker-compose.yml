@@ -10,6 +10,8 @@ services:
       - WORKERS=${WORKERS}
       - OMP_NUM_THREADS=${OMP_NUM_THREADS}
       - MAX_ATOMS=50
+      - TIMEOUT=${TIMEOUT}
+      - LOG_LEVEL=debug
     ports:
       - ${PORT}:${PORT}
     volumes:
