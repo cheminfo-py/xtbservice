@@ -49,11 +49,14 @@ def run_xtb_ir(
         if mol is not None:
             bond_displacements = compile_all_bond_displacements(mol, atoms, ir)
             mask = np.zeros_like(bond_displacements)
-            if linear:
-                mask[:5, :] = 1
+            if len(atoms) > 2:
+                if linear:
+                    mask[:5, :] = 1
+                else:
+                    mask[:6, :] = 1
+                masked_bond_displacements = np.ma.masked_array(bond_displacements, mask)
             else:
-                mask[:6, :] = 1
-            masked_bond_displacements = np.ma.masked_array(bond_displacements, mask)
+                masked_bond_displacements = bond_displacements
             most_relevant_mode_for_bond_ = masked_bond_displacements.argmax(axis=0)
             most_relevant_mode_for_bond = []
             bonds = get_bonds_from_mol(mol)
@@ -71,11 +74,7 @@ def run_xtb_ir(
         ]
 
         mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
-            ir,
-            linear,
-            displacement_alignments,
-            bond_displacements,
-            bonds,
+            ir, linear, displacement_alignments, bond_displacements, bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -278,15 +277,7 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (
-                symbols[i],
-                pos[0],
-                pos[1],
-                pos[2],
-                mode[i, 0],
-                mode[i, 1],
-                mode[i, 2],
-            )
+            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
         )
 
     xyz_file_string = "".join(xyz_file)
@@ -306,7 +297,6 @@ def get_displacement_xyz_dict(ir):
 
 def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
     displacements = ir.get_mode(mode)
-    # displacements -= displacements[:3].mean(axis=0)
     relative_contribution = (
         np.linalg.norm(displacements, axis=1)
         / np.linalg.norm(displacements, axis=1).max()
@@ -320,12 +310,15 @@ def select_most_contributing_atoms(ir, mode, threshold: float = 0.4):
 
 
 def select_most_contributing_bonds(displacements, threshold: float = 0.4):
-    relative_contribution = displacements / displacements.sum()
 
-    return np.where(
-        relative_contribution
-        > threshold * np.max(np.abs(np.diff(relative_contribution)))
-    )[0]
+    if len(displacements) > 1:
+        relative_contribution = displacements / displacements.sum()
+        return np.where(
+            relative_contribution
+            > threshold * np.max(np.abs(np.diff(relative_contribution)))
+        )[0]
+    else:
+        return np.array([0])
 
 
 @lru_cache()
