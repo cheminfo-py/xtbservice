@@ -15,12 +15,27 @@ from xtb.ase.calculator import XTB
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
-from .settings import IMAGINARY_FREQ_THRESHOLD, TIMEOUT
-from .utils import get_hash, get_moments_of_inertia, hash_atoms, molfile2ase, smiles2ase
+from .settings import IMAGINARY_FREQ_THRESHOLD, MAX_ATOMS_FF, MAX_ATOMS_XTB, TIMEOUT
+from .utils import (
+    get_moments_of_inertia,
+    hash_atoms,
+    hash_object,
+    molfile2ase,
+    smiles2ase,
+)
+
+
+def get_max_atoms(method):
+    if method == "GFNFF":
+        return MAX_ATOMS_FF
+    elif method == "GFN2xTB":
+        return MAX_ATOMS_XTB
+    elif method == "GFN1xTB":
+        return MAX_ATOMS_XTB
 
 
 def ir_hash(atoms, method):
-    return hash(str(hash_atoms(atoms)) + method)
+    return hash_object(str(hash_atoms(atoms)) + method)
 
 
 def run_xtb_ir(
@@ -74,7 +89,11 @@ def run_xtb_ir(
         ]
 
         mode_info, has_imaginary, has_large_imaginary = compile_modes_info(
-            ir, linear, displacement_alignments, bond_displacements, bonds,
+            ir,
+            linear,
+            displacement_alignments,
+            bond_displacements,
+            bonds,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -97,7 +116,7 @@ def run_xtb_ir(
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_smiles(smiles, method, myhash):
-    atoms, mol = smiles2ase(smiles)
+    atoms, mol = smiles2ase(smiles, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)
     result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
     ir_from_smiles_cache.set(myhash, result, expire=None)
@@ -105,7 +124,7 @@ def calculate_from_smiles(smiles, method, myhash):
 
 
 def ir_from_smiles(smiles, method):
-    myhash = get_hash(smiles + method)
+    myhash = hash_object(smiles + method)
     result = ir_from_smiles_cache.get(myhash)
     if result is None:
         result = calculate_from_smiles(smiles, method, myhash)
@@ -114,7 +133,7 @@ def ir_from_smiles(smiles, method):
 
 @wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_molfile(molfile, method, myhash):
-    atoms, mol = molfile2ase(molfile)
+    atoms, mol = molfile2ase(molfile, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)
     result = run_xtb_ir(opt_result.atoms, method=method, mol=mol)
     ir_from_molfile_cache.set(myhash, result, expire=None)
@@ -122,7 +141,7 @@ def calculate_from_molfile(molfile, method, myhash):
 
 
 def ir_from_molfile(molfile, method):
-    myhash = get_hash(molfile + method)
+    myhash = hash_object(molfile + method)
 
     result = ir_from_molfile_cache.get(myhash)
 
@@ -277,7 +296,15 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
+            % (
+                symbols[i],
+                pos[0],
+                pos[1],
+                pos[2],
+                mode[i, 0],
+                mode[i, 1],
+                mode[i, 2],
+            )
         )
 
     xyz_file_string = "".join(xyz_file)

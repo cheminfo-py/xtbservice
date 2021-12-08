@@ -10,11 +10,11 @@ from xtb.ase.calculator import XTB
 
 from .cache import opt_cache
 from .models import OptimizationResult
-from .utils import hash_atoms
+from .utils import hash_atoms, hash_object
 
 
 def opt_hash(atoms, method):
-    return hash(str(hash_atoms(atoms)) + method)
+    return hash_object(str(hash_atoms(atoms)) + method)
 
 
 def run_xtb_opt(

@@ -26,7 +26,7 @@ docker-compose up
 You have the option to customize the behavior of the app using environment variables:
 
 - `IMAGINARY_FREQ_THRESHOLD`: sets the maximum energy in cm-1 for imaginary frequency (if this threshold is exceeded, the output will contain a warning)
-- `MAX_ATOMS`: if the input contains more than this number of atoms, an error is thrown
+- `MAX_ATOMS_XTB`/`MAX_ATOMS_FF`: if the input contains more than this number of atoms, an error is thrown
 - `TIMEOUT`: If the request takes longer than this time (in seconds) a `TimeOut` error is raised
 - `CACHEDIR`: Sets the directory for the diskcache. It will be mounted by the docker container.
 

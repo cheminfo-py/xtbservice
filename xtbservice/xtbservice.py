@@ -13,7 +13,7 @@ from .conformers import conformers_from_molfile, conformers_from_smiles
 from .errors import TooLargeError
 from .ir import ir_from_molfile, ir_from_smiles
 from .models import ConformerLibrary, ConformerRequest, IRRequest, IRResult
-from .settings import MAX_ATOMS
+from .settings import MAX_ATOMS_FF, MAX_ATOMS_XTB
 
 ALLOWED_HOSTS = ["*"]
 
@@ -28,6 +28,13 @@ app = FastAPI(
     },
     license_info={"name": "MIT"},
 )
+
+
+def max_atoms_error():
+    return HTTPException(
+        status_code=422,
+        detail=f"This services only accepts structures with less than {MAX_ATOMS_FF} atoms for force-field calculations and {MAX_ATOMS_XTB} for xtb calculations.",
+    )
 
 
 @app.get("/app_version")
@@ -50,10 +57,7 @@ def post_get_ir_spectrum(irrequest: IRRequest):
                 detail="You need to provide either `molFile` or `smiles`",
             )
     except TooLargeError:
-        raise HTTPException(
-            status_code=422,
-            detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
-        )
+        raise max_atoms_error()
     except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return ir
@@ -83,10 +87,7 @@ def post_conformers(conformerrequest: ConformerRequest):
                 detail="You need to provide either `molFile` or `smiles`",
             )
     except TooLargeError:
-        raise HTTPException(
-            status_code=422,
-            detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
-        )
+        raise max_atoms_error()
     except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return conformers
@@ -98,10 +99,7 @@ def get_ir_spectrum(smiles: str, method: str = "GFNFF"):
     try:
         ir = ir_from_smiles(smiles, method)
     except TooLargeError:
-        raise HTTPException(
-            status_code=422,
-            detail=f"This services only accepts structures with less than {MAX_ATOMS} atoms.",
-        )
+        raise max_atoms_error()
     except TimeoutError:
         raise HTTPException(status_code=500, detail="Calculation timed out.")
     return ir

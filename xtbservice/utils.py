@@ -8,7 +8,11 @@ from rdkit import Chem
 from .cache import conformer_cache
 from .conformers import embed_conformer
 from .errors import TooLargeError
-from .settings import MAX_ATOMS
+from .settings import MAX_ATOMS_FF, MAX_ATOMS_XTB
+
+
+def hash_object(objec):
+    return hashlib.md5(str(objec).encode("utf-8")).hexdigest()
 
 
 def rdkit2ase(mol):
@@ -21,7 +25,14 @@ def rdkit2ase(mol):
     return atoms
 
 
-def molfile2ase(molfile: str) -> Atoms:
+def check_max_atoms(mol, max_atoms):
+    if mol.GetNumAtoms() > max_atoms:
+        raise TooLargeError(
+            f"Molecule can have maximal {max_atoms} atoms for this service"
+        )
+
+
+def molfile2ase(molfile: str, max_atoms: int = MAX_ATOMS_XTB) -> Atoms:
     try:
         result = conformer_cache.get(molfile)
     except KeyError:
@@ -30,18 +41,14 @@ def molfile2ase(molfile: str) -> Atoms:
     if result is None:
         mol = Chem.MolFromMolBlock(molfile, sanitize=True, removeHs=False)
         mol.UpdatePropertyCache(strict=False)
-        natoms = mol.GetNumAtoms()
-        if natoms > MAX_ATOMS:
-            raise TooLargeError(
-                f"Molecule can have maximal {MAX_ATOMS} atoms for this service"
-            )
+        check_max_atoms(mol, max_atoms)
         mol = embed_conformer(mol)
         result = rdkit2ase(mol), mol
         conformer_cache.set(molfile, result, expire=None)
     return result
 
 
-def smiles2ase(smiles: str) -> Atoms:
+def smiles2ase(smiles: str, max_atoms: int = MAX_ATOMS_XTB) -> Atoms:
     try:
         result = conformer_cache.get(smiles)
     except KeyError:
@@ -49,11 +56,7 @@ def smiles2ase(smiles: str) -> Atoms:
 
     if result is None:
         mol = Chem.MolFromSmiles(smiles)
-        natoms = mol.GetNumAtoms()
-        if natoms > MAX_ATOMS:
-            raise TooLargeError(
-                f"Molecule can have maximal {MAX_ATOMS} atoms for this service"
-            )
+        check_max_atoms(mol, max_atoms)
         refmol = Chem.AddHs(Chem.Mol(mol))
         refmol = embed_conformer(refmol)
         result = rdkit2ase(refmol), refmol
@@ -65,11 +68,7 @@ def hash_atoms(atoms: Atoms) -> int:
     symbols = str(atoms.symbols)
     positions = str(atoms.positions)
 
-    return hash(symbols + positions)
-
-
-def get_hash(string):
-    return hashlib.md5(string.encode("utf-8")).hexdigest()
+    return hash_object(symbols + positions)
 
 
 def get_center_of_mass(masses, positions):

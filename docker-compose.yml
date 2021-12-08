@@ -9,7 +9,8 @@ services:
       - CACHEDIR=/ircache
       - WORKERS=${WORKERS}
       - OMP_NUM_THREADS=${OMP_NUM_THREADS}
-      - MAX_ATOMS=50
+      - MAX_ATOMS_XTB=60
+      - MAX_ATOMS_FF=100
       - TIMEOUT=${TIMEOUT}
       - LOG_LEVEL=debug
     ports:
