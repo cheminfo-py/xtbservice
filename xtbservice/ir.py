@@ -11,6 +11,9 @@ from fastapi.logger import logger
 from rdkit import Chem
 from scipy import spatial
 from xtb.ase.calculator import XTB
+from ase.vibrations.placzek import PlaczekStatic
+from ase.vibrations.raman import StaticRamanCalculator
+from ase.calculators.bond_polarizability import BondPolarizability
 
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
@@ -53,10 +56,16 @@ def run_xtb_ir(
     if result is None:
         logger.debug(f"IR not in cache for {this_hash}, running")
         atoms.pbc = False
-        atoms.calc = XTB(method=method)
-
+        atoms.calc = XTB(method=method)  
+   
+        rm = StaticRamanCalculator(atoms, BondPolarizability, name=str(this_hash))
+        rm.ir = True
+        rm.run()
+        pz = PlaczekStatic(atoms, name=str(this_hash))
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
+       
+        raman_intensities = pz.get_absolute_intensities()
         spectrum = ir.get_spectrum(start=500, end=4000)
         zpe = ir.get_zero_point_energy()
         most_relevant_mode_for_bond = None
@@ -94,6 +103,7 @@ def run_xtb_ir(
             displacement_alignments,
             bond_displacements,
             bonds,
+            raman_intensities
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
@@ -171,7 +181,7 @@ def clean_frequency(frequencies, n):
     return freq, c
 
 
-def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=None):
+def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=None, raman_intensities=None):
     frequencies = ir.get_frequencies()
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
@@ -180,7 +190,10 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
     third_best_alignment = sorted_alignments[2]
     has_imaginary = False
     has_large_imaginary = False
-    for n in range(3 * len(ir.indices)):
+    num_modes = 3 * len(ir.indices)
+    if raman_intensities is None: 
+        raman_intensities = [None] * num_modes
+    for n in range(num_modes):
         n = int(mapping[n])
         if n < 3:
             # print("below 5", alignments[n])
@@ -221,6 +234,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
                     ir, frequencies, symbols, n
                 ),
                 "intensity": float(ir.intensities[n]),
+                "ramanIntensity": float(raman_intensities[n]),
                 "wavenumber": float(f),
                 "imaginary": True if c == "i" else False,
                 "mostDisplacedAtoms": [
