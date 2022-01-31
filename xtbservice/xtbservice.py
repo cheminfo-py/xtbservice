@@ -22,10 +22,7 @@ app = FastAPI(
     title="XTB webservice",
     description="Offers xtb calculation tools. Allowed methods are `GFNFF`, `GFN2xTB`, `GFN1xTB`",
     version=__version__,
-    contact={
-        "name": "Cheminfo",
-        "email": "admin@cheminfo.org",
-    },
+    contact={"name": "Cheminfo", "email": "admin@cheminfo.org",},
     license_info={"name": "MIT"},
 )
 
