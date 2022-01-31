@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
+import numpy as np
 from fastapi.testclient import TestClient
 
 from xtbservice import __version__, app
@@ -41,6 +42,7 @@ def test_from_molfile():
     with open(os.path.join(THIS_DIR, "test_files", "molfile.mol"), "r") as handle:
         mol = handle.read()
     response = client.post("/v1/ir", json={"molFile": mol})
+    print(response.text)
     assert response.status_code == 200
     d = response.json()
     assert 8 in d["modes"][35]["mostDisplacedAtoms"]
@@ -101,3 +103,10 @@ def test_mode_type_assignent():
     water_mode_types = collect_node_types(d)
     assert water_mode_types["translation"] == 3
     assert water_mode_types["rotation"] == 3
+
+
+def test_raman():
+    clear_caches()
+    response = client.get("/v1/ir?smiles=O=C=O")
+    d = response.json()
+    assert np.abs(np.argmax(d["ramanIntensities"]) - 3224) < 5

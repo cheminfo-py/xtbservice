@@ -6,14 +6,14 @@ from typing import List, Tuple, Union
 import numpy as np
 import wrapt_timeout_decorator
 from ase import Atoms
+from ase.calculators.bond_polarizability import BondPolarizability
 from ase.vibrations import Infrared
+from ase.vibrations.placzek import PlaczekStatic
+from ase.vibrations.raman import StaticRamanCalculator
 from fastapi.logger import logger
 from rdkit import Chem
 from scipy import spatial
 from xtb.ase.calculator import XTB
-from ase.vibrations.placzek import PlaczekStatic
-from ase.vibrations.raman import StaticRamanCalculator
-from ase.calculators.bond_polarizability import BondPolarizability
 
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
@@ -40,9 +40,19 @@ def get_max_atoms(method):
 def ir_hash(atoms, method):
     return hash_object(str(hash_atoms(atoms)) + method)
 
-def get_raman_spectrum(pz,start=0, end=4000, npts=None, width=4,
-                    type='Gaussian', method='standard', direction='central',
-                    intensity_unit='(D/A)2/amu', normalize=False):
+
+def get_raman_spectrum(
+    pz,
+    start=0,
+    end=4000,
+    npts=None,
+    width=4,
+    type="Gaussian",
+    method="standard",
+    direction="central",
+    intensity_unit="(D/A)2/amu",
+    normalize=False,
+):
     """Get infrared spectrum.
 
     The method returns wavenumbers in cm^-1 with corresponding
@@ -53,9 +63,10 @@ def get_raman_spectrum(pz,start=0, end=4000, npts=None, width=4,
     intensity.
     """
     frequencies = pz.vibrations.get_frequencies(method, direction).real
-    intensities =  pz.get_absolute_intensities()
-    return pz.vibrations.fold(frequencies, intensities,
-                        start, end, npts, width, type, normalize)
+    intensities = pz.get_absolute_intensities()
+    return pz.vibrations.fold(
+        frequencies, intensities, start, end, npts, width, type, normalize
+    )
 
 
 def run_xtb_ir(
@@ -73,18 +84,27 @@ def run_xtb_ir(
     if result is None:
         logger.debug(f"IR not in cache for {this_hash}, running")
         atoms.pbc = False
-        atoms.calc = XTB(method=method)  
-   
-        rm = StaticRamanCalculator(atoms, BondPolarizability, name=str(this_hash))
-        rm.ir = True
-        rm.run()
-        pz = PlaczekStatic(atoms, name=str(this_hash))
+        atoms.calc = XTB(method=method)
+
+        try:
+            rm = StaticRamanCalculator(atoms, BondPolarizability, name=str(this_hash))
+            rm.ir = True
+            rm.run()
+            pz = PlaczekStatic(atoms, name=str(this_hash))
+
+            raman_intensities = pz.get_absolute_intensities()
+            raman_spectrum = list(get_raman_spectrum(pz)[1])
+
+        except Exception:
+            raman_intensities = None
+            raman_spectrum = None
+
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
-       
-        raman_intensities = pz.get_absolute_intensities()
+
         spectrum = ir.get_spectrum(start=0, end=4000)
-        raman_spectrum = get_raman_spectrum(pz)
+
+        assert len(spectrum[0]) == len(raman_spectrum)
         zpe = ir.get_zero_point_energy()
         most_relevant_mode_for_bond = None
         bond_displacements = None
@@ -121,12 +141,12 @@ def run_xtb_ir(
             displacement_alignments,
             bond_displacements,
             bonds,
-            raman_intensities
+            raman_intensities,
         )
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
-            ramanIntensities=list(raman_spectrum[1]),
+            ramanIntensities=raman_spectrum,
             zeroPointEnergy=zpe,
             modes=mode_info,
             hasImaginaryFrequency=has_imaginary,
@@ -200,7 +220,9 @@ def clean_frequency(frequencies, n):
     return freq, c
 
 
-def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=None, raman_intensities=None):
+def compile_modes_info(
+    ir, linear, alignments, bond_displacements=None, bonds=None, raman_intensities=None
+):
     frequencies = ir.get_frequencies()
     symbols = ir.atoms.get_chemical_symbols()
     modes = []
@@ -210,7 +232,7 @@ def compile_modes_info(ir, linear, alignments, bond_displacements=None, bonds=No
     has_imaginary = False
     has_large_imaginary = False
     num_modes = 3 * len(ir.indices)
-    if raman_intensities is None: 
+    if raman_intensities is None:
         raman_intensities = [None] * num_modes
     for n in range(num_modes):
         n = int(mapping[n])
@@ -329,15 +351,7 @@ def get_displacement_xyz_for_mode(ir, frequencies, symbols, n):
     for i, pos in enumerate(ir.atoms.positions):
         xyz_file.append(
             "%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n"
-            % (
-                symbols[i],
-                pos[0],
-                pos[1],
-                pos[2],
-                mode[i, 0],
-                mode[i, 1],
-                mode[i, 2],
-            )
+            % (symbols[i], pos[0], pos[1], pos[2], mode[i, 0], mode[i, 1], mode[i, 2],)
         )
 
     xyz_file_string = "".join(xyz_file)
