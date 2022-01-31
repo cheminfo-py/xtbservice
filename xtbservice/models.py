@@ -20,12 +20,16 @@ class OptimizationResult:
 class IRResult(BaseModel):
     wavenumbers: List[float] = Field(None, description="List of wavenumbers in cm^-1")
     intensities: List[float] = Field(
-        None, description="List of intensities in (D/Å)^2 amu^-1"
+        None, description="List of IR intensities in (D/Å)^2 amu^-1"
+    )
+    ramanIntensities: List[float] = Field(
+        None,
+        description="List of Raman intensities in (D/Å)^2 amu^-1, computed using Placzek and Bond Polarization (using values from Lippincott/Stuttman) approximation",
     )
     zeroPointEnergy: float = Field(None, description="Zero point energy in a.u.")
     modes: Optional[List[dict]] = Field(
         None,
-        description="List of dictionaries with the keys `number` - number of the mode (zero indexed), `displacements` - xyz file with the displacement vectors, `intensity` intensity of the mode in D/Å)^2 amu^-1, `imaginary` - true if mode is imaginary, `mostDisplaceAtoms` - sorted list of atom indices (zero indiced) according to they displacement (Euclidean norm), `mostContributingAtoms` - most contributing atoms according to a distance criterion.",
+        description="List of dictionaries with the keys `number` - number of the mode (zero indexed), `displacements` - xyz file with the displacement vectors, `intensity` - IR intensity of the mode in D/Å)^2 amu^-1, `ramanIntensity` - Raman intensity of mode, `imaginary` - true if mode is imaginary, `mostDisplaceAtoms` - sorted list of atom indices (zero indiced) according to they displacement (Euclidean norm), `mostContributingAtoms` - most contributing atoms according to a distance criterion.",
     )
     mostRelevantModesOfAtoms: Optional[Dict[int, List[int]]] = Field(
         None,
@@ -100,12 +104,10 @@ class ConformerRequest(BaseModel):
 
 class Conformer(BaseModel):
     molFile: str = Field(
-        None,
-        description="String with molfile.",
+        None, description="String with molfile.",
     )
     energy: str = Field(
-        None,
-        description="Final energy after energy minimization.",
+        None, description="Final energy after energy minimization.",
     )
 
 

@@ -40,6 +40,23 @@ def get_max_atoms(method):
 def ir_hash(atoms, method):
     return hash_object(str(hash_atoms(atoms)) + method)
 
+def get_raman_spectrum(pz,start=0, end=4000, npts=None, width=4,
+                    type='Gaussian', method='standard', direction='central',
+                    intensity_unit='(D/A)2/amu', normalize=False):
+    """Get infrared spectrum.
+
+    The method returns wavenumbers in cm^-1 with corresponding
+    absolute infrared intensity.
+    Start and end point, and width of the Gaussian/Lorentzian should
+    be given in cm^-1.
+    normalize=True ensures the integral over the peaks to give the
+    intensity.
+    """
+    frequencies = pz.vibrations.get_frequencies(method, direction).real
+    intensities =  pz.get_absolute_intensities()
+    return pz.vibrations.fold(frequencies, intensities,
+                        start, end, npts, width, type, normalize)
+
 
 def run_xtb_ir(
     atoms: Atoms, method: str = "GFNFF", mol: Union[None, Chem.Mol] = None
@@ -66,7 +83,8 @@ def run_xtb_ir(
         ir.run()
        
         raman_intensities = pz.get_absolute_intensities()
-        spectrum = ir.get_spectrum(start=500, end=4000)
+        spectrum = ir.get_spectrum(start=0, end=4000)
+        raman_spectrum = get_raman_spectrum(pz)
         zpe = ir.get_zero_point_energy()
         most_relevant_mode_for_bond = None
         bond_displacements = None
@@ -108,6 +126,7 @@ def run_xtb_ir(
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
+            ramanIntensities=list(raman_spectrum[1]),
             zeroPointEnergy=zpe,
             modes=mode_info,
             hasImaginaryFrequency=has_imaginary,
