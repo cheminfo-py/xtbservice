@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from cgitb import reset
 import os
 
 import numpy as np
@@ -110,3 +111,11 @@ def test_raman():
     response = client.get("/v1/ir?smiles=O=C=O")
     d = response.json()
     assert np.abs(np.argmax(d["ramanIntensities"]) - 3224) < 5
+
+
+def test_failing_raman():
+    clear_caches()
+
+    response = client.get('/v1/ir?smiles=Cl[Ti](Cl)(Cl)Cl')
+    d = response.json()
+    assert d['ramanIntensities'] == None

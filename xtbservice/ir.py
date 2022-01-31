@@ -91,11 +91,11 @@ def run_xtb_ir(
             rm.ir = True
             rm.run()
             pz = PlaczekStatic(atoms, name=str(this_hash))
-
             raman_intensities = pz.get_absolute_intensities()
             raman_spectrum = list(get_raman_spectrum(pz)[1])
 
-        except Exception:
+        except Exception as e:
+            shutil.rmtree(str(this_hash))
             raman_intensities = None
             raman_spectrum = None
 
@@ -104,7 +104,8 @@ def run_xtb_ir(
 
         spectrum = ir.get_spectrum(start=0, end=4000)
 
-        assert len(spectrum[0]) == len(raman_spectrum)
+        if raman_spectrum is not None:
+            assert len(spectrum[0]) == len(raman_spectrum)
         zpe = ir.get_zero_point_energy()
         most_relevant_mode_for_bond = None
         bond_displacements = None
@@ -163,7 +164,7 @@ def run_xtb_ir(
     return result
 
 
-@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+#@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_smiles(smiles, method, myhash):
     atoms, mol = smiles2ase(smiles, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)
@@ -180,7 +181,7 @@ def ir_from_smiles(smiles, method):
     return result
 
 
-@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+#@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_molfile(molfile, method, myhash):
     atoms, mol = molfile2ase(molfile, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)
@@ -268,6 +269,7 @@ def compile_modes_info(
             mostContributingBonds = [bonds[i] for i in mostContributingBonds]
             mode = ir.get_mode(n)
 
+        ramanIntensity = float(raman_intensities[n]) if raman_intensities[n] is not None else None 
         modes.append(
             {
                 "number": n,
@@ -275,7 +277,7 @@ def compile_modes_info(
                     ir, frequencies, symbols, n
                 ),
                 "intensity": float(ir.intensities[n]),
-                "ramanIntensity": float(raman_intensities[n]),
+                "ramanIntensity": ramanIntensity,
                 "wavenumber": float(f),
                 "imaginary": True if c == "i" else False,
                 "mostDisplacedAtoms": [
