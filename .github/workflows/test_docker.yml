@@ -5,7 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    env:
+      timeout: 200
     steps:
       - uses: actions/checkout@v1
       - name: Build the Docker image
