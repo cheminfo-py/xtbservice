@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from csv import excel
 import shutil
 from functools import lru_cache
 from typing import List, Tuple, Union
@@ -43,6 +44,7 @@ def ir_hash(atoms, method):
 
 def get_raman_spectrum(
     pz,
+    modes, 
     start=0,
     end=4000,
     npts=None,
@@ -50,10 +52,9 @@ def get_raman_spectrum(
     type="Gaussian",
     method="standard",
     direction="central",
-    intensity_unit="(D/A)2/amu",
     normalize=False,
 ):
-    """Get infrared spectrum.
+    """Get spectrum.
 
     The method returns wavenumbers in cm^-1 with corresponding
     absolute infrared intensity.
@@ -62,11 +63,54 @@ def get_raman_spectrum(
     normalize=True ensures the integral over the peaks to give the
     intensity.
     """
-    frequencies = pz.vibrations.get_frequencies(method, direction).real
+    frequencies = pz.vibrations.get_frequencies(method, direction)
     intensities = pz.get_absolute_intensities()
-    return pz.vibrations.fold(
-        frequencies, intensities, start, end, npts, width, type, normalize
+
+    return get_spectrum(pz.vibrations, modes, frequencies, intensities, start, end, npts, width, type, normalize)
+
+
+def get_ir_spectrum(ir, modes, start=0,
+    end=4000,
+    npts=None,
+    width=4,
+    type="Gaussian",
+    method="standard",
+    direction="central",
+    normalize=False,):
+    """Get spectrum.
+
+    The method returns wavenumbers in cm^-1 with corresponding
+    absolute infrared intensity.
+    Start and end point, and width of the Gaussian/Lorentzian should
+    be given in cm^-1.
+    normalize=True ensures the integral over the peaks to give the
+    intensity.
+    """
+    frequencies = ir.get_frequencies(method, direction)
+    intensities = ir.intensities
+
+    return get_spectrum(ir, modes, frequencies, intensities, start, end, npts, width, type, normalize)
+
+
+def get_spectrum(vib_object, modes, frequencies, intensities,     start=0,
+    end=4000,
+    npts=None,
+    width=4,
+    type="Gaussian",
+
+    normalize=False): 
+    
+    filtered_frequencies, filtered_intensities = [], []
+
+    for freq, int, mode in zip(frequencies, intensities, modes):
+        if mode['modeType'] == 'vibration':
+            filtered_frequencies.append(freq.real)
+            filtered_intensities.append(int)
+
+    return vib_object.fold(
+        filtered_frequencies, filtered_frequencies, start, end, npts, width, type, normalize
     )
+
 
 
 def run_xtb_ir(
@@ -92,9 +136,9 @@ def run_xtb_ir(
             rm.run()
             pz = PlaczekStatic(atoms, name=str(this_hash))
             raman_intensities = pz.get_absolute_intensities()
-            raman_spectrum = list(get_raman_spectrum(pz)[1])
-
+   
         except Exception as e:
+            print(e)
             shutil.rmtree(str(this_hash))
             raman_intensities = None
             raman_spectrum = None
@@ -102,10 +146,6 @@ def run_xtb_ir(
         ir = Infrared(atoms, name=str(this_hash))
         ir.run()
 
-        spectrum = ir.get_spectrum(start=0, end=4000)
-
-        if raman_spectrum is not None:
-            assert len(spectrum[0]) == len(raman_spectrum)
         zpe = ir.get_zero_point_energy()
         most_relevant_mode_for_bond = None
         bond_displacements = None
@@ -144,6 +184,15 @@ def run_xtb_ir(
             bonds,
             raman_intensities,
         )
+
+        spectrum = get_ir_spectrum(ir, mode_info)
+        try:
+            raman_spectrum = list(get_raman_spectrum(pz, mode_info)[1])
+        except Exception: 
+            raman_spectrum = None
+        if raman_spectrum is not None:
+            assert len(spectrum[0]) == len(raman_spectrum)
+
         result = IRResult(
             wavenumbers=list(spectrum[0]),
             intensities=list(spectrum[1]),
@@ -164,7 +213,7 @@ def run_xtb_ir(
     return result
 
 
-#@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_smiles(smiles, method, myhash):
     atoms, mol = smiles2ase(smiles, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)
@@ -181,7 +230,7 @@ def ir_from_smiles(smiles, method):
     return result
 
 
-#@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
+@wrapt_timeout_decorator.timeout(TIMEOUT, use_signals=False)
 def calculate_from_molfile(molfile, method, myhash):
     atoms, mol = molfile2ase(molfile, get_max_atoms(method))
     opt_result = run_xtb_opt(atoms, method=method)

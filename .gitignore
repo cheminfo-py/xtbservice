@@ -541,3 +541,4 @@ ircache/
 *.joblib
 /dev
 gfnff_topo
+/scratch
