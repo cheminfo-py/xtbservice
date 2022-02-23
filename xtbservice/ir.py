@@ -15,7 +15,7 @@ from fastapi.logger import logger
 from rdkit import Chem
 from scipy import spatial
 from xtb.ase.calculator import XTB
-
+from math import pi, sqrt, log
 from .cache import ir_cache, ir_from_molfile_cache, ir_from_smiles_cache
 from .models import IRResult
 from .optimize import run_xtb_opt
@@ -64,9 +64,8 @@ def get_raman_spectrum(
     intensity.
     """
     frequencies = pz.vibrations.get_frequencies(method, direction)
-    intensities = pz.get_absolute_intensities()
-
-    return get_spectrum(pz.vibrations, modes, frequencies, intensities, start, end, npts, width, type, normalize)
+    intensities = [mode['ramanIntensity'] for mode in modes]
+    return get_spectrum(modes, frequencies, intensities, start, end, npts, width, type, normalize)
 
 
 def get_ir_spectrum(ir, modes, start=0,
@@ -87,12 +86,52 @@ def get_ir_spectrum(ir, modes, start=0,
     intensity.
     """
     frequencies = ir.get_frequencies(method, direction)
-    intensities = ir.intensities
+    intensities = [mode['intensity'] for mode in modes]
+    return get_spectrum(modes, frequencies, intensities, start, end, npts, width, type, normalize)
 
-    return get_spectrum(ir, modes, frequencies, intensities, start, end, npts, width, type, normalize)
+
+def fold(frequencies, intensities,
+            start=800.0, end=4000.0, npts=None, width=4.0,
+            type='Gaussian', normalize=False):
+    """Fold frequencies and intensities within the given range
+    and folding method (Gaussian/Lorentzian).
+    The energy unit is cm^-1.
+    normalize=True ensures the integral over the peaks to give the
+    intensity.
+    """
+
+    lctype = type.lower()
+    assert lctype in ['gaussian', 'lorentzian']
+    if not npts:
+        npts = int((end - start) / width * 10 + 1)
+    prefactor = 1
+    if lctype == 'lorentzian':
+        intensities = intensities * width * pi / 2.
+        if normalize:
+            prefactor = 2. / width / pi
+    else:
+        sigma = width / 2. / sqrt(2. * log(2.))
+        if normalize:
+            prefactor = 1. / sigma / sqrt(2 * pi)
+
+    # Make array with spectrum data
+    spectrum = np.empty(npts)
+    energies = np.linspace(start, end, npts)
+    for i, energy in enumerate(energies):
+        energies[i] = energy
+        if lctype == 'lorentzian':
+            spectrum[i] = (intensities * 0.5 * width / pi /
+                            ((frequencies - energy)**2 +
+                            0.25 * width**2)).sum()
+        else:
+            spectrum[i] = (intensities *
+                            np.exp(-(frequencies - energy)**2 /
+                                    2. / sigma**2)).sum()
+    return [energies, prefactor * spectrum]
 
 
-def get_spectrum(vib_object, modes, frequencies, intensities,     start=0,
+
+def get_spectrum(modes, frequencies, intensities,     start=0,
     end=4000,
     npts=None,
     width=4,
@@ -106,9 +145,8 @@ def get_spectrum(vib_object, modes, frequencies, intensities,     start=0,
         if mode['modeType'] == 'vibration':
             filtered_frequencies.append(freq.real)
             filtered_intensities.append(int)
-
-    return vib_object.fold(
-        filtered_frequencies, filtered_frequencies, start, end, npts, width, type, normalize
+    return fold(
+        filtered_frequencies, filtered_intensities, start, end, npts, width, type, normalize
     )
 
 
@@ -136,7 +174,7 @@ def run_xtb_ir(
             rm.run()
             pz = PlaczekStatic(atoms, name=str(this_hash))
             raman_intensities = pz.get_absolute_intensities()
-   
+
         except Exception as e:
             print(e)
             shutil.rmtree(str(this_hash))
@@ -188,7 +226,7 @@ def run_xtb_ir(
         spectrum = get_ir_spectrum(ir, mode_info)
         try:
             raman_spectrum = list(get_raman_spectrum(pz, mode_info)[1])
-        except Exception: 
+        except Exception as e: 
             raman_spectrum = None
         if raman_spectrum is not None:
             assert len(spectrum[0]) == len(raman_spectrum)
