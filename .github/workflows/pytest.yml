@@ -36,18 +36,7 @@ jobs:
           conda install xtb-python -c conda-forge -y
           pip install -r requirements.txt
           pip install pytest
-      - name: Test with pytest (numba activated)
+      - name: Test with pytest
         run: |
           pytest test/simulation_regtest.py
           pytest test/test_api.py
-      - name: coverage (numba deactivated)
-        run: pytest --cov=./ --cov-report=xml
-        env:
-          NUMBA_DISABLE_JIT: 1
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests

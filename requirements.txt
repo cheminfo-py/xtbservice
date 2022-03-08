@@ -7,3 +7,4 @@ git+https://github.com/kjappelbaum/ase.git@polarizability
 diskcache
 fastapi_versioning
 wrapt_timeout_decorator
+requests
