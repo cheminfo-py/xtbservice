@@ -53,3 +53,17 @@ def test_h2o(technique):
 
     ir_intensities =get_ir_modes(modes)
     assert len(ir_intensities) == 3
+
+@pytest.mark.parametrize("technique", ["GFN2xTB", "GFNFF"])
+def test_ch4(technique):
+    """3N-6 DOF"""
+    clear_caches()
+    ir = ir_from_smiles('C', technique)
+
+    modes = filter_modes(ir.modes)
+
+    raman_intensities = get_raman_modes(modes)
+    assert len(raman_intensities) == 9
+
+    ir_intensities =get_ir_modes(modes)
+    assert len(ir_intensities) == 6
